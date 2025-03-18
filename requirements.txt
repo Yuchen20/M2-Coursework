@@ -1,0 +1,14 @@
+scikit-learn
+transformers>=4.49.0
+torch>=2.6.0
+accelerate>=1.4.0
+tqdm
+numpy>=2.2.3
+h5py>=3.13.0 
+ipykernel
+ipywidgets
+matplotlib
+pandas
+wandb
+
+export WANDB_API_KEY=a2e581554c05d89d0734bd21c514fe35ea627a63#  to power shell
