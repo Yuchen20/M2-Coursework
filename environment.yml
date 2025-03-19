@@ -1,0 +1,23 @@
+name: my_env  # Name is optional when using --prefix
+channels:
+  - defaults
+  - conda-forge
+  - nvidia  # For CUDA support
+  - pytorch  # Ensures GPU-compatible PyTorch
+dependencies:
+  - python=3.10  # Adjust if needed
+  - scikit-learn
+  - transformers>=4.49.0
+  - pytorch>=2.6.0
+  - torchvision
+  - torchaudio
+  - pytorch-cuda=12.1  # Ensure it matches your system's CUDA version
+  - accelerate>=1.4.0
+  - tqdm
+  - numpy>=2.2.3
+  - h5py>=3.13.0
+  - ipykernel
+  - ipywidgets
+  - matplotlib
+  - pandas
+  - wandb

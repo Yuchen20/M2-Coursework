@@ -10,5 +10,3 @@ ipywidgets
 matplotlib
 pandas
 wandb
-
-export WANDB_API_KEY=a2e581554c05d89d0734bd21c514fe35ea627a63#  to power shell
