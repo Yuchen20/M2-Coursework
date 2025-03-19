@@ -5,7 +5,7 @@ import numpy as np
 import wandb
 from tqdm import tqdm
 from accelerate import Accelerator
-from src.get_flops import QwenFlopsCalculator
+from .get_flops import QwenFlopsCalculator
 import matplotlib.pyplot as plt
 from datetime import datetime
 from torch.optim import AdamW
@@ -122,6 +122,9 @@ class LoRATrainer:
                 "target_eval_pairs": target_eval_pairs,
             }
             wandb.config.update(config)
+        
+        # Add a metrics dictionary to collect all metrics before logging
+        self.metrics_buffer = {}
 
     def _init_optimizer(self, learning_rate, weight_decay):
         """Initialize the AdamW optimizer with the given learning rate."""
@@ -228,7 +231,7 @@ class LoRATrainer:
                 # Track per-step and cumulative FLOPS
                 self.run_train_flops += step_flops
                 
-                # Log metrics
+                # Collect metrics for logging
                 if self.steps % self.log_interval == 0 and self.accelerator.is_main_process:
                     avg_loss = accumulated_loss / batch_count
                     avg_ce = accumulated_ce / batch_count
@@ -236,7 +239,8 @@ class LoRATrainer:
                     accumulated_ce = 0
                     batch_count = 0
                     
-                    wandb.log({
+                    # Collect training metrics
+                    train_metrics = {
                         "train/loss": avg_loss,
                         "train/ce_loss": avg_ce,
                         "train/step": self.steps,
@@ -245,7 +249,14 @@ class LoRATrainer:
                         "train/step_flops": step_flops,
                         "train/cumulative_flops": self.run_train_flops,
                         "flops/budget_percent_used": (self.run_train_flops + self.run_val_flops + self.run_test_flops) / 1e17 * 100
-                    })
+                    }
+                    
+                    # Log all metrics collected up to this point
+                    self._log_to_wandb(train_metrics, self.steps)
+                    
+                    # Track gradient statistics at the same step
+                    if self.accelerator.is_main_process:
+                        self.log_gradient_stats(self.steps)
                 
                 # Run evaluation and log FLOPS
                 if self.steps % self.eval_interval == 0:
@@ -259,8 +270,11 @@ class LoRATrainer:
                             "val/cumulative_flops": self.run_val_flops,
                             "flops/total_used": self.run_train_flops + self.run_val_flops + self.run_test_flops,
                         })
-                        wandb.log(val_metrics)
-                        self.log_flops_to_wandb()  # Log updated FLOPS after evaluation
+                        # Log validation metrics at the same step
+                        self._log_to_wandb(val_metrics, self.steps)
+                        
+                        # Update FLOPS summary
+                        self.log_flops_to_wandb(step=self.steps)
                     
                     self.model.train()  # Switch back to train mode
                     
@@ -277,7 +291,7 @@ class LoRATrainer:
                 
                 if self.accelerator.is_main_process:
                     progress_bar.update(1)
-                    progress_bar.set_postfix(loss=f"{loss:.4f}", ce=f"{ce_loss:.4f}")
+                    progress_bar.set_postfix(loss=f"{loss:.4f}", ce=f"{ce_loss:.4f}, steps{self.steps}")
                 
                 # Check if we reached max steps
                 if self.steps >= self.max_steps:
@@ -300,6 +314,50 @@ class LoRATrainer:
         self.save_checkpoint(suffix="final")
         
         if self.accelerator.is_main_process:
+            # Log final validation and test metrics to wandb with clear labels
+            val_metrics.update({
+                "val/step_flops": val_step_flops,
+                "val/cumulative_flops": self.run_val_flops,
+                "val/is_final": True,
+                "final/val_loss": val_metrics.get("val/loss", 0),
+                "final/val_mse": val_metrics.get("val/mse", 0),
+                "final/val_mae": val_metrics.get("val/mae", 0),
+                "final/val_failure_rate": val_metrics.get("val/failure_rate", 0),
+            })
+            
+            test_metrics.update({
+                "test/step_flops": test_step_flops,
+                "test/cumulative_flops": self.run_test_flops,
+                "test/is_final": True,
+                "final/test_loss": test_metrics.get("test/loss", 0),
+                "final/test_mse": test_metrics.get("test/mse", 0),
+                "final/test_mae": test_metrics.get("test/mae", 0),
+                "final/test_failure_rate": test_metrics.get("test/failure_rate", 0),
+                "flops/total_used": self.run_train_flops + self.run_val_flops + self.run_test_flops,
+            })
+            
+            # Log both metrics at the same step for easy comparison
+            self._log_to_wandb(val_metrics, self.steps)
+            self._log_to_wandb(test_metrics, self.steps)
+            
+            # Also add to wandb summary for easy access
+            wandb.run.summary["final_val_loss"] = val_metrics.get("val/loss", 0)
+            wandb.run.summary["final_val_mse"] = val_metrics.get("val/mse", 0)
+            wandb.run.summary["final_val_mae"] = val_metrics.get("val/mae", 0)
+            wandb.run.summary["final_test_mse"] = test_metrics.get("test/mse", 0)
+            wandb.run.summary["final_test_mae"] = test_metrics.get("test/mae", 0)
+            wandb.run.summary["best_val_loss"] = self.best_val_loss
+            
+            # Create a summary table for comparison
+            comparison_table = wandb.Table(columns=["Metric", "Validation", "Test"])
+            comparison_table.add_data("Loss", f"{val_metrics.get('val/loss', 0):.4f}", f"{test_metrics.get('test/loss', 0):.4f}")
+            comparison_table.add_data("MSE", f"{val_metrics.get('val/mse', 0):.4f}", f"{test_metrics.get('test/mse', 0):.4f}")
+            comparison_table.add_data("MAE", f"{val_metrics.get('val/mae', 0):.4f}", f"{test_metrics.get('test/mae', 0):.4f}")
+            comparison_table.add_data("Failure Rate", f"{val_metrics.get('val/failure_rate', 0)*100:.2f}%", 
+                                     f"{test_metrics.get('test/failure_rate', 0)*100:.2f}%")
+            
+            self._log_to_wandb({"final/comparison_table": comparison_table}, self.steps)
+            
             print(f"Training completed in {self.steps} steps")
             print(f"Best validation loss: {self.best_val_loss:.4f}")
             print(f"Final validation loss: {val_metrics['val/loss']:.4f}")
@@ -361,15 +419,11 @@ class LoRATrainer:
         # Backward pass and optimization
         self.accelerator.backward(loss)
         
-        # Track gradient statistics before optimization step
-        if self.steps % self.log_interval == 0 and self.accelerator.is_main_process:
-            self.log_gradient_stats()
-            
         self.optimizer.step()
         
         return loss.item(), ce_loss.item(), step_flops
     
-    def log_gradient_stats(self):
+    def log_gradient_stats(self, step=None):
         """Log gradient statistics for trainable parameters to wandb."""
         if not self.accelerator.is_main_process:
             return
@@ -386,6 +440,10 @@ class LoRATrainer:
         # Track layer-specific stats
         lora_a_stats = {"mean": [], "norm": []}
         lora_b_stats = {"mean": [], "norm": []}
+        
+        # For tracking LoRA parameter magnitudes
+        lora_a_values = []
+        lora_b_values = []
         
         # Collect statistics
         for name, param in self.model.named_parameters():
@@ -407,34 +465,62 @@ class LoRATrainer:
                 if ".A" in name:
                     lora_a_stats["mean"].append(grad.abs().mean().item())
                     lora_a_stats["norm"].append(grad.norm().item())
+                    # Also collect the parameter values themselves
+                    lora_a_values.append(param.detach().cpu().flatten())
                 elif ".B" in name:
                     lora_b_stats["mean"].append(grad.abs().mean().item())
                     lora_b_stats["norm"].append(grad.norm().item())
+                    # Also collect the parameter values themselves
+                    lora_b_values.append(param.detach().cpu().flatten())
         
         # Calculate aggregate statistics
         if grad_stats["mean"]:
-            wandb.log({
+            grad_metrics = {
                 "gradients/mean": np.mean(grad_stats["mean"]),
                 "gradients/max": np.max(grad_stats["max"]),
                 "gradients/min": np.min(grad_stats["min"]),
                 "gradients/norm": np.mean(grad_stats["norm"]),
                 "gradients/nan_ratio": np.mean(grad_stats["is_nan"]),
-            })
+            }
             
             # Log LoRA specific stats if available
             if lora_a_stats["mean"]:
-                wandb.log({
+                grad_metrics.update({
                     "gradients/lora_a_mean": np.mean(lora_a_stats["mean"]),
                     "gradients/lora_a_norm": np.mean(lora_a_stats["norm"]),
                 })
             if lora_b_stats["mean"]:
-                wandb.log({
+                grad_metrics.update({
                     "gradients/lora_b_mean": np.mean(lora_b_stats["mean"]),
                     "gradients/lora_b_norm": np.mean(lora_b_stats["norm"]),
                 })
             
-            # Log histogram of gradient norms (useful for tracking vanishing/exploding gradients)
-            wandb.log({"gradients/norm_histogram": wandb.Histogram(np.array(grad_stats["norm"]))})
+            # Add histogram as a separate log to avoid mixing scalar metrics with histograms
+            hist_metrics = {
+                "gradients/norm_histogram": wandb.Histogram(np.array(grad_stats["norm"]))
+            }
+            
+            # Add LoRA parameter histograms if available
+            lora_param_metrics = {}
+            if lora_a_values:
+                # Concatenate all A matrices for histogram
+                all_a_values = torch.cat(lora_a_values).numpy()
+                lora_param_metrics["parameters/lora_a_histogram"] = wandb.Histogram(all_a_values)
+                lora_param_metrics["parameters/lora_a_magnitude"] = np.mean(np.abs(all_a_values))
+            
+            if lora_b_values:
+                # Concatenate all B matrices for histogram
+                all_b_values = torch.cat(lora_b_values).numpy()
+                lora_param_metrics["parameters/lora_b_histogram"] = wandb.Histogram(all_b_values)
+                lora_param_metrics["parameters/lora_b_magnitude"] = np.mean(np.abs(all_b_values))
+            
+            # Log all metrics with the same step
+            self._log_to_wandb(grad_metrics, step)
+            self._log_to_wandb(hist_metrics, step)
+            
+            # Log LoRA parameter metrics
+            if lora_param_metrics:
+                self._log_to_wandb(lora_param_metrics, step)
     
     def evaluate(self):
         """Evaluate the model on the validation set."""
@@ -466,10 +552,8 @@ class LoRATrainer:
         val_step_flops = flops_after - flops_before
         metrics["val/step_flops"] = val_step_flops
         
-        # Log metrics to wandb
-        if self.accelerator.is_main_process:
-            wandb.log(metrics)
-
+        # Let the calling code handle logging with _log_to_wandb
+        # removing direct wandb.log call here
         
         # Unmerge LoRA weights after evaluation
         self.unmerge_lora_weights()
@@ -504,9 +588,8 @@ class LoRATrainer:
         test_step_flops = flops_after - flops_before
         metrics["test/step_flops"] = test_step_flops
         
-        # Log metrics to wandb
-        if self.accelerator.is_main_process:
-            wandb.log(metrics)
+        # Let the calling code handle logging with _log_to_wandb
+        # removing direct wandb.log call here
         
         # Unmerge LoRA weights after testing
         self.unmerge_lora_weights()
@@ -604,7 +687,7 @@ class LoRATrainer:
                     raise ValueError("Could not determine token ID for ';'. Check tokenizer implementation.")
     
 
-    def log_flops_to_wandb(self, final=False):
+    def log_flops_to_wandb(self, final=False, step=None):
         """Log FLOPS usage to wandb with detailed breakdown."""
         if not self.accelerator.is_main_process:
             return
@@ -619,7 +702,7 @@ class LoRATrainer:
         train_flops = current_exp_flops[current_exp_flops['train_or_inference'] == 'training'].flops.sum()
         val_flops = current_exp_flops[current_exp_flops['train_or_inference'] == 'inference'].flops.sum()
         
-        # Update FLOPS in wandb summary
+        # Update FLOPS in wandb summary (these are not step-specific)
         wandb.run.summary["flops_used"] = total_flops
         wandb.run.summary["flops_budget_percent"] = total_flops / 1e17 * 100
         wandb.run.summary["flops_train_total"] = train_flops
@@ -640,47 +723,49 @@ class LoRATrainer:
         }
         
         # Add training vs inference breakdown
-        for op_type, flops in flops_by_type.iterrows():
-            flops_metrics[f"flops/{op_type}_total"] = flops['flops']
-            flops_metrics[f"flops/{op_type}_percent"] = flops['flops'] / total_flops * 100
+        # for op_type, flops in flops_by_type.iterrows():
+        #     flops_metrics[f"flops/{op_type}_total"] = flops['flops']
+        #     flops_metrics[f"flops/{op_type}_percent"] = flops['flops'] / total_flops * 100
         
-        # Add detailed operation breakdown
-        for desc, flops in flops_by_desc.iterrows():
-            flops_metrics[f"flops/by_operation/{desc}"] = flops['flops']
-            flops_metrics[f"flops/by_operation/{desc}_percent"] = flops['flops'] / total_flops * 100
+        # # Add detailed operation breakdown
+        # for desc, flops in flops_by_desc.iterrows():
+        #     flops_metrics[f"flops/by_operation/{desc}"] = flops['flops']
+        #     flops_metrics[f"flops/by_operation/{desc}_percent"] = flops['flops'] / total_flops * 100
         
-        # Log to wandb
-        wandb.log(flops_metrics)
+        # Log metrics with the same step
+        self._log_to_wandb(flops_metrics, step)
         
         # If this is the final summary, create a pie chart
-        if final:
-            # Create pie chart of FLOPS usage
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 7))
+        # if final:
+        #     # Create pie chart of FLOPS usage
+        #     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 7))
             
-            # Train vs Inference pie chart
-            train_infer_data = flops_by_type.reset_index()
-            ax1.pie(train_infer_data['flops'], labels=train_infer_data['train_or_inference'], 
-                   autopct='%1.1f%%', startangle=90)
-            ax1.set_title('FLOPS Usage: Training vs Inference')
+        #     # Train vs Inference pie chart
+        #     train_infer_data = flops_by_type.reset_index()
+        #     ax1.pie(train_infer_data['flops'], labels=train_infer_data['train_or_inference'], 
+        #            autopct='%1.1f%%', startangle=90)
+        #     ax1.set_title('FLOPS Usage: Training vs Inference')
             
-            # Operation breakdown pie chart
-            op_data = flops_by_desc.reset_index()
-            ax2.pie(op_data['flops'], labels=op_data['description'], 
-                   autopct='%1.1f%%', startangle=90)
-            ax2.set_title('FLOPS Usage by Operation')
+        #     # Operation breakdown pie chart
+        #     op_data = flops_by_desc.reset_index()
+        #     ax2.pie(op_data['flops'], labels=op_data['description'], 
+        #            autopct='%1.1f%%', startangle=90)
+        #     ax2.set_title('FLOPS Usage by Operation')
             
-            plt.tight_layout()
-            wandb.log({"flops/summary_charts": wandb.Image(fig)})
-            plt.close(fig)
+        #     plt.tight_layout()
+        #     chart_metrics = {"flops/summary_charts": wandb.Image(fig)}
+        #     self._log_to_wandb(chart_metrics, step)
+        #     plt.close(fig)
             
-            # Also log as a table
-            wandb.log({
-                "flops/summary_table": wandb.Table(
-                    columns=["Operation", "FLOPS", "Percent"],
-                    data=[[op, f"{flops:,.0f}", f"{flops/total_flops*100:.2f}%"] 
-                          for op, flops in zip(op_data['description'], op_data['flops'])]
-                )
-            })
+        #     # Also log as a table
+        #     table_metrics = {
+        #         "flops/summary_table": wandb.Table(
+        #             columns=["Operation", "FLOPS", "Percent"],
+        #             data=[[op, f"{flops:,.0f}", f"{flops/total_flops*100:.2f}%"] 
+        #                   for op, flops in zip(op_data['description'], op_data['flops'])]
+        #         )
+        #     }
+        #     self._log_to_wandb(table_metrics, step)
 
     def _get_current_flops(self):
         """Helper method to get current total FLOPS."""
@@ -716,7 +801,7 @@ class LoRATrainer:
         ignore_keys=None,
         metric_key_prefix="eval"
     ):
-        """Evaluation loop for time series metrics using per-sample inference."""
+        """Evaluation loop for time series metrics using batched inference with semicolon tracking."""
         self.model.eval()
         
         # Track metrics
@@ -732,6 +817,13 @@ class LoRATrainer:
         token_counts = []
         inference_times = []
         
+        # Track generation completion metrics
+        failed_generations = 0
+        total_generations = 0
+        
+        # Store text examples from last batch for visualization
+        last_batch_examples = []
+        
         # Get semicolon token ID for sequence parsing
         semi_colon_id = self._get_semicolon_token_id()
         semi_colon_max = self.target_eval_pairs + 1
@@ -740,80 +832,145 @@ class LoRATrainer:
         for batch_idx, inputs in enumerate(tqdm(dataloader, desc=description, leave=False, position=0)):
             inputs = self._prepare_inputs(inputs)
             batch_size = inputs["input_ids"].size(0)
+            total_generations += batch_size
             
-            # Process each item in the batch individually
-            for sample_idx in tqdm(range(batch_size), desc=f"Batch {batch_idx}", leave=False, position=1):
-                # Auto-regressive prediction for MSE/MAE calculation
-                input_ids = inputs["input_ids"][sample_idx:sample_idx+1].to(self.device)
-                target = inputs["target"][sample_idx:sample_idx+1].to(self.device)
-                
-                # Original length and maximum generation length
-                original_length = input_ids.shape[1]
-                max_length = semi_colon_max * 20  # Conservative estimate for max sequence length
-                
-                # Track per-token CE loss
-                per_step_ce = []
-                semi_colon_count = 0
-                
-                # Track inference speed for this sample
-                sample_tokens_generated = 0
-                sample_start_time = time.time()
-                
-                # Generate predictions token by token
-                for _ in tqdm(
-                    range(max_length), desc=f"Generating {sample_idx}", leave=False, position=2
-                ):  
-                    # Log FLOPs for this inference step
-                    self.flops_calculator.log_flops(
-                        batch_size=1,
-                        seq_len=self.context_length,
-                        rank=self.lora_rank,
-                        verbose=False,
-                        inference=True,
-                        description=f"{description}_sample_{batch_idx}_{sample_idx}"
-                    )
+            # Track text examples from this batch
+            batch_examples = []
+            
+            # Store original inputs for each sample in the batch
+            original_inputs = inputs["input_ids"].clone()
+            original_length = original_inputs.shape[1]
+            original_targets = inputs["target"].clone()
+            
+            # Track each sample's status
+            active_samples = torch.ones(batch_size, dtype=torch.bool, device=self.device)
+            semicolon_counts = torch.zeros(batch_size, dtype=torch.long, device=self.device)
+            generated_tokens = torch.zeros(batch_size, dtype=torch.long, device=self.device)
+            
+            # Batch generation
+            max_new_tokens = semi_colon_max * 12  # Conservative estimate
+            start_time = time.time()
+            
+            # Initial input_ids for generation - initialize as list of tensors for easier append operations
+            input_ids_list = [inputs["input_ids"][i].clone() for i in range(batch_size)]
+            
+            # Store generations for each sample
+            all_generations = [[] for _ in range(batch_size)]
+            per_sample_ce_losses = [[] for _ in range(batch_size)]
+            
+            # Start batched generation
+
+            for step in tqdm(range(max_new_tokens), desc="Generating", leave=False, position=1):
+                # If no active samples left, we're done
+                if not active_samples.any():
+                    break
                     
-                    # Forward pass with only the context window
-                    outputs = self.model(input_ids[:, -self.context_length:])
-                    next_token_logits = outputs.logits[:, -1, :]
-                    next_token = torch.argmax(next_token_logits, dim=-1)
-                    input_ids = torch.cat([input_ids, next_token.unsqueeze(0)], dim=1)
-                    sample_tokens_generated += 1
+                # Get current active batch
+                active_indices = active_samples.nonzero().squeeze(-1)
+                
+                # Handle case where active_indices is a scalar (only one active sample)
+                if active_indices.dim() == 0:
+                    active_indices = active_indices.unsqueeze(0)
+                
+                # Create active batch from individual tensors in list
+                active_input_ids = torch.stack([input_ids_list[i][-self.context_length:] for i in active_indices])
+                
+                # Log FLOPs for this inference step
+                self.flops_calculator.log_flops(
+                    batch_size=len(active_indices),
+                    seq_len=min(active_input_ids.size(1), self.context_length),
+                    rank=self.lora_rank,
+                    verbose=False,
+                    inference=True,
+                    description=f"{description}_batch"
+                )
+                
+                # Forward pass with context window for active samples
+                outputs = self.model(active_input_ids)
+                next_token_logits = outputs.logits[:, -1, :]
+                next_tokens = torch.argmax(next_token_logits, dim=-1)
+                
+                # Append next tokens
+                for i, sample_idx in enumerate(active_indices):
+                    # Get original sample index and append token
+                    token_id = next_tokens[i].item()
+                    all_generations[sample_idx].append(token_id)
+                    input_ids_list[sample_idx] = torch.cat([
+                        input_ids_list[sample_idx], 
+                        torch.tensor([token_id], device=self.device)
+                    ])
+                    generated_tokens[sample_idx] += 1
                     
-                    # Calculate CE loss if we have a target for this position
-                    target_pos = input_ids.shape[1] - original_length - 1
-                    if target_pos < target.shape[1]:
-                        loss = torch.nn.functional.cross_entropy(next_token_logits, target[:, target_pos])
-                        per_step_ce.append(loss.item())
+                    # Calculate CE loss if applicable
+                    target_pos = original_length + len(all_generations[sample_idx]) - 1
+                    if target_pos < original_targets[sample_idx].shape[0]:
+                        target_token = original_targets[sample_idx, target_pos]
+                        loss = torch.nn.functional.cross_entropy(
+                            next_token_logits[i].unsqueeze(0), 
+                            target_token.unsqueeze(0)
+                        )
                         losses.append(loss.item())
+                        per_sample_ce_losses[sample_idx].append(loss.item())
                     
-                    # Check for semicolon and update count
-                    if next_token.item() == semi_colon_id:
-                        semi_colon_count += 1
-                        if semi_colon_count >= semi_colon_max:
-                            break
+                    # Check if this is a semicolon
+                    if token_id == semi_colon_id:
+                        semicolon_counts[sample_idx] += 1
+                        
+                        # Mark sample as done if reached max semicolons
+                        if semicolon_counts[sample_idx] >= semi_colon_max:
+                            active_samples[sample_idx] = False
                 
-                # Record inference time for this sample
-                sample_inference_time = time.time() - sample_start_time
-                token_counts.append(sample_tokens_generated)
-                inference_times.append(sample_inference_time)
+                # No longer need to update input_ids for next iteration since we're using a list of tensors
+            
+            # Record inference times for entire batch
+            batch_inference_time = time.time() - start_time
+            for i in range(batch_size):
+                token_counts.append(generated_tokens[i].item())
+                inference_times.append(batch_inference_time / batch_size)  # Approximate per-sample time
                 
-                # Process results for this sample
+                # Count failed generations (didn't reach enough semicolons)
+                if semicolon_counts[i] < semi_colon_max:
+                    failed_generations += 1
+            
+            # Process results for evaluation
+            sample_tqdm = tqdm(range(batch_size), desc="Processing", leave=False, position=2)
+            for sample_idx in range(batch_size):
                 try:
-                    # Convert to numpy
-                    pred_ids = input_ids.squeeze().cpu().numpy()
-                    target_ids = target.squeeze().cpu().numpy()
+                    # Get the original input and generated tokens
+                    original_input = original_inputs[sample_idx]
+                    generated_sequence = all_generations[sample_idx]
+                    
+                    # Convert to full sequence of IDs - use the stored tensor directly
+                    full_sequence = input_ids_list[sample_idx]
                     
                     # Decode to string format
-                    predicted_text = self.processor.decode_to_string(pred_ids[original_length:])
+                    pred_ids = full_sequence.cpu().numpy()[original_length:]
+                    target_ids = original_targets[sample_idx].cpu().numpy()
+
+                    
+                    # For the last batch, save examples for visualization
+                    if batch_idx == len(dataloader) - 1:
+                        predicted_text = self.processor.decode_to_string(pred_ids)
+                        target_text = self.processor.decode_to_string(target_ids)
+                        batch_examples.append({
+                            "sample_idx": sample_idx,
+                            "predicted_text": predicted_text,
+                            "target_text": target_text,
+                            "semicolon_count": semicolon_counts[sample_idx].item(),
+                            "success": semicolon_counts[sample_idx].item() >= semi_colon_max
+                        })
+                    
+                    
+                    # Decode to values using processor
+                    predicted_text = self.processor.decode_to_string(pred_ids)
                     target_text = self.processor.decode_to_string(target_ids)
                     
-                    # Parse the string output properly
-                    # For predicted values, get values after first semicolon up to semi_colon_count
-                    pred_values = self._parse_values(predicted_text, semi_colon_count)
-                    target_values = self._parse_values(target_text, semi_colon_count)
+                    # Parse values for metrics calculation
+                    pred_values = self._parse_values(predicted_text, semicolon_counts[sample_idx].item())
+                    target_values = self._parse_values(target_text, semicolon_counts[sample_idx].item())
                     
-                    # Calculate metrics if we have valid values
+
+                    # Calculate metrics if we have enough values
                     if (len(pred_values) >= self.target_eval_pairs and 
                         len(target_values) >= self.target_eval_pairs):
                         
@@ -837,9 +994,14 @@ class LoRATrainer:
                         mae_values.append(mae)
                         mse_per_time.append(mse_per_timestep)
                         mae_per_time.append(mae_per_timestep)
+
                 except Exception as e:
                     if self.is_world_process_zero():
                         print(f"Error processing sequence {batch_idx}/{sample_idx}: {e}")
+            
+            # Save examples from the last batch
+            if batch_idx == len(dataloader) - 1:
+                last_batch_examples = batch_examples
         
         # Calculate final metrics
         metrics = {}
@@ -862,6 +1024,11 @@ class LoRATrainer:
                 metrics[f"{metric_key_prefix}/mse_per_time"] = np.mean(mse_per_time_array, axis=0).tolist()
                 metrics[f"{metric_key_prefix}/mae_per_time"] = np.mean(mae_per_time_array, axis=0).tolist()
         
+        # Generation completion metrics
+        metrics[f"{metric_key_prefix}/failed_generations"] = failed_generations
+        metrics[f"{metric_key_prefix}/total_generations"] = total_generations
+        metrics[f"{metric_key_prefix}/failure_rate"] = failed_generations / total_generations if total_generations > 0 else 0
+        
         # Store visualization data
         if first_pred is not None:
             metrics["pred_values"] = first_pred
@@ -879,22 +1046,37 @@ class LoRATrainer:
             metrics[f"{metric_key_prefix}/total_tokens_generated"] = total_tokens
             metrics[f"{metric_key_prefix}/total_inference_time"] = total_time
         
+        # Log example generations to wandb
+        if self.is_world_process_zero() and last_batch_examples:
+            example_table = wandb.Table(columns=["Sample", "Success", "Prediction", "Target"])
+            for example in last_batch_examples[:5]:  # Log up to 5 examples to avoid clutter
+                example_table.add_data(
+                    example["sample_idx"],
+                    "yes" if example["success"] else "no",
+                    example["predicted_text"][:500],  # Limit text length
+                    example["target_text"][:500]      # Limit text length
+                )
+            metrics[f"{metric_key_prefix}/generation_examples"] = example_table
+        
         # Log metrics to console
         if self.is_world_process_zero():
             mse_str = f"{metrics.get(f'{metric_key_prefix}/mse', 'N/A')}"
             mae_str = f"{metrics.get(f'{metric_key_prefix}/mae', 'N/A')}"
             samples = metrics.get(f"{metric_key_prefix}/samples_evaluated", "unknown")
+            failure_rate = metrics.get(f"{metric_key_prefix}/failure_rate", 0) * 100
             
             inference_speed = metrics.get(f"{metric_key_prefix}/tokens_per_second", None)
             if inference_speed is not None:
                 print(f"\n{description} on {samples} samples - "
                       f"MSE: {mse_str}, MAE: {mae_str}, "
+                      f"Failure rate: {failure_rate:.1f}%, "
                       f"Speed: {inference_speed:.2f} tokens/sec")
             else:
                 print(f"\n{description} on {samples} samples - "
-                      f"MSE: {mse_str}, MAE: {mae_str}")
+                      f"MSE: {mse_str}, MAE: {mae_str}, "
+                      f"Failure rate: {failure_rate:.1f}%")
         
-        # Simply return the metrics dictionary
+        # Return metrics
         return metrics
 
     def _prepare_inputs(self, inputs):
@@ -944,3 +1126,13 @@ class LoRATrainer:
             return True
         except:
             return False
+    
+    def _log_to_wandb(self, metrics, step=None):
+        """Centralized method to log metrics to wandb.
+        
+        Args:
+            metrics (dict): Dictionary of metrics to log
+            step (int, optional): Step to associate with these metrics
+        """
+        if self.accelerator.is_main_process:
+            wandb.log(metrics, step=step)

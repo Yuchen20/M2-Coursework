@@ -66,7 +66,7 @@ class QwenFlopsCalculator:
             os.makedirs(self.log_folder)
             # also make the flops_log.csv
             with open(self.log_file, "w") as f:
-                f.write("name, batch_size, seq_len, rank, flops, timestamp, train_or_inference, description\n")
+                f.write("name,batch_size,seq_len,rank,flops,timestamp,train_or_inference,description\n")
    
         
 

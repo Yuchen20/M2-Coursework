@@ -168,3 +168,7 @@ notebooks/wandb/run-20250318_173640-mqn0bvsf/files/wandb-metadata.json
 notebooks/wandb/run-20250318_173640-mqn0bvsf/logs/debug-internal.log
 notebooks/wandb/run-20250318_173640-mqn0bvsf/logs/debug.log
 /notebooks/wandb
+/checkpoints
+/log_files
+/wandb
+/checkpoints

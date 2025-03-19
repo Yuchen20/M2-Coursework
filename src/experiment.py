@@ -7,11 +7,8 @@ import wandb
 from tqdm import tqdm
 from pathlib import Path
 
-# Add the parent directory to the path for module imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from src.Trainer import LoRATrainer
-from src.get_data import DataMaster
+from .Trainer import LoRATrainer
+from .get_data import DataMaster
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
@@ -98,6 +95,12 @@ def apply_lora(model, lora_rank):
 
 def train_model():
     """Training function for wandb sweep or individual run."""
+    # Initialize wandb first
+    wandb.init()
+    
+    # Now get hyperparameters from wandb.config
+    config = wandb.config
+    
     # Set random seeds for reproducibility
     torch.manual_seed(42)
     np.random.seed(42)
@@ -106,21 +109,19 @@ def train_model():
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     
-    # Get hyperparameters from wandb
-    config = wandb.config
+    # Log experiment setup
+    print(f"Starting experiment with learning_rate={config.learning_rate}, lora_rank={config.lora_rank}")
     
     # Fixed hyperparameters as specified
     context_length = 128
     batch_size = 4
-    max_steps = 6000
-    eval_interval = 1000
+    max_steps = 20
+    eval_interval = 500
     target_eval_pairs = 3
-    experiment_fraction = 0.2
-    test_size = 0.2
+    experiment_fraction = 0.02
+    test_size = 0.1
     val_size = 0.1
     
-    # Log experiment setup
-    print(f"Starting experiment with learning_rate={config.learning_rate}, lora_rank={config.lora_rank}")
     print(f"Using context_length={context_length}, max_steps={max_steps}, eval_interval={eval_interval}")
     
     # Load model and tokenizer
@@ -134,7 +135,7 @@ def train_model():
     print(f"Model has {trainable_params:,} trainable parameters")
     
     # Load data
-    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'lotka_volterra_data.h5')
+    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'lotka_volterra_data.h5')
     print(f"Loading data from {data_path}")
     
     with h5py.File(data_path, "r") as f:
