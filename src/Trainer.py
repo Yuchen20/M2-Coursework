@@ -280,11 +280,12 @@ class LoRATrainer:
                     self.model.train()  # Switch back to train mode
                     
                     # Save best model based on validation loss
-                    if val_metrics["val/loss"] < self.best_val_loss:
-                        self.best_val_loss = val_metrics["val/loss"]
-                        self.save_checkpoint(suffix="best")
-                        if self.accelerator.is_main_process:
-                            print(f"New best model with val loss: {self.best_val_loss:.4f}")
+                    if "val/loss" in val_metrics:
+                        if val_metrics["val/loss"] < self.best_val_loss:
+                            self.best_val_loss = val_metrics["val/loss"]
+                            self.save_checkpoint(suffix="best")
+                            if self.accelerator.is_main_process:
+                                print(f"New best model with val loss: {self.best_val_loss:.4f}")
                 
                 # Save regular checkpoint
                 if self.steps % self.save_interval == 0:
@@ -1045,7 +1046,7 @@ class LoRATrainer:
         
         # Average loss
         if losses:
-            metrics[f"{metric_key_prefix}/loss"] = np.mean(losses)
+            metrics[f"{metric_key_prefix}/loss"] = np.nanmean(losses)
         
         # MSE and MAE metrics
         if mse_values:

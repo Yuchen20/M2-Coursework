@@ -95,6 +95,8 @@ def apply_lora(model, lora_rank):
 
 def train_model():
     """Training function for wandb sweep or individual run."""
+
+    print('starting training')
     # Initialize wandb first
     wandb.init()
     
@@ -176,7 +178,7 @@ def train_model():
         learning_rate=lr,
         max_steps=max_steps,
         eval_interval=eval_interval,
-        save_interval=max_steps//4,  # Save checkpoint halfway through
+        save_interval=eval_interval,  # Save checkpoint halfway through
         target_eval_pairs=target_eval_pairs,
         project_name="M2-TimeSeriesForecasting-Sweep",
         run_name=run_name

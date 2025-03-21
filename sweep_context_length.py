@@ -3,9 +3,6 @@ import os
 import sys
 import argparse
 
-# Add the parent directory to the path for module imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 from src.experiment_context_length import train_model
 
 if __name__ == "__main__":
@@ -22,7 +19,7 @@ if __name__ == "__main__":
         },
         "parameters": {
             "context_length": {
-                "values": [128, 512, 768]  # Three context lengths to try
+                "values": [512, 768, 128]  # Three context lengths to try
             }
         }
     }
