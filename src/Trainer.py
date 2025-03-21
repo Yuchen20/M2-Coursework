@@ -664,28 +664,45 @@ class LoRATrainer:
             print(f"Checkpoint not found: {checkpoint_path}")
             return False
         
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
-        unwrapped_model = self.accelerator.unwrap_model(self.model)
+        try:
+            # First try to load with weights_only=True (safer)
+            checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        except Exception as e:
+            print(f"Warning: Loading checkpoint with weights_only=False due to: {str(e)}")
+            try:
+                # If that fails, try with weights_only=False
+                checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
+            except Exception as e2:
+                # If both attempts fail, continue with original model
+                print(f"Error: Failed to load checkpoint even with weights_only=False: {str(e2)}")
+                print(f"Continuing with original model without loading checkpoint.")
+                return False
         
-        # Load model weights
-        model_state_dict = unwrapped_model.state_dict()
-        for key, value in checkpoint["model"].items():
-            if key in model_state_dict:
-                model_state_dict[key] = value
-        
-        unwrapped_model.load_state_dict(model_state_dict, strict=False)
-        
-        # Load optimizer state
-        self.optimizer.load_state_dict(checkpoint["optimizer"])
-        
-        # Load training state
-        self.steps = checkpoint["steps"]
-        self.best_val_loss = checkpoint.get("best_val_loss", float('inf'))
-        self.learning_rate = checkpoint.get("learning_rate", self.learning_rate)
-        
-        print(f"Loaded checkpoint from {checkpoint_path} (step {self.steps})")
-        return True
-    
+        try:
+            unwrapped_model = self.accelerator.unwrap_model(self.model)
+            
+            # Load model weights
+            model_state_dict = unwrapped_model.state_dict()
+            for key, value in checkpoint["model"].items():
+                if key in model_state_dict:
+                    model_state_dict[key] = value
+            
+            unwrapped_model.load_state_dict(model_state_dict, strict=False)
+            
+            # Load optimizer state
+            self.optimizer.load_state_dict(checkpoint["optimizer"])
+            
+            # Load training state
+            self.steps = checkpoint["steps"]
+            self.best_val_loss = checkpoint.get("best_val_loss", float('inf'))
+            self.learning_rate = checkpoint.get("learning_rate", self.learning_rate)
+            
+            print(f"Loaded checkpoint from {checkpoint_path} (step {self.steps})")
+            return True
+        except Exception as e:
+            print(f"Error while applying checkpoint: {str(e)}")
+            print(f"Continuing with original model without loading checkpoint.")
+            return False
 
     def _get_semicolon_token_id(self):
         """Helper method to get the semicolon token ID."""
@@ -700,7 +717,7 @@ class LoRATrainer:
                 try:
                     # Third attempt: through vocabulary
                     semicolon_token_id = self.tokenizer.vocab.get(';')
-                    if semicolon_token_id is None:
+                    if (semicolon_token_id is None):
                         raise ValueError()
                     return semicolon_token_id
                 except (AttributeError, ValueError):
