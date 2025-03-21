@@ -22,10 +22,10 @@ if __name__ == "__main__":
         },
         "parameters": {
             "learning_rate": {
-                "values": [1e-5, 5e-5, 1e-4]  # Three learning rates to try
+                "values": [1e-4, 5e-5, 1e-5]  # Three learning rates to try
             },
             "lora_rank": {
-                "values": [2, 4, 8]  # Three LoRA ranks to try
+                "values": [8, 4, 2]  # Three LoRA ranks to try
             }
         }
     }
