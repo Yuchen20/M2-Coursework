@@ -940,15 +940,20 @@ class LoRATrainer:
                     generated_tokens[sample_idx] += 1
                     
                     # Calculate CE loss if applicable
-                    target_pos = original_length + len(all_generations[sample_idx]) - 1
+                    target_pos = len(all_generations[sample_idx]) - 1
+
                     if target_pos < original_targets[sample_idx].shape[0]:
                         target_token = original_targets[sample_idx, target_pos]
                         loss = torch.nn.functional.cross_entropy(
                             next_token_logits[i].unsqueeze(0), 
                             target_token.unsqueeze(0)
                         )
+                        
+                
                         losses.append(loss.item())
                         per_sample_ce_losses[sample_idx].append(loss.item())
+
+    
                     
                     # Check if this is a semicolon
                     if token_id == semi_colon_id:
