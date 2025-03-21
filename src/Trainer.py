@@ -100,6 +100,7 @@ class LoRATrainer:
         # Initialize metrics tracking
         self.steps = 0
         self.best_val_loss = float('inf')
+        self.best_checkpoint_path = None  # Store path to best checkpoint
         
         # Ensure checkpoint directory exists
         os.makedirs(self.checkpoint_dir, exist_ok=True)
@@ -306,6 +307,15 @@ class LoRATrainer:
         val_metrics, val_step_flops = self.evaluate()
         self.run_val_flops += val_step_flops
         
+        # Load the best checkpoint before final testing
+        if self.best_checkpoint_path is not None and os.path.exists(self.best_checkpoint_path):
+            if self.accelerator.is_main_process:
+                print(f"Loading best checkpoint from {self.best_checkpoint_path} for final testing")
+            self.load_checkpoint(self.best_checkpoint_path)
+        else:
+            if self.accelerator.is_main_process:
+                print("Best checkpoint not found, using current model for testing")
+        
         # Final test
         test_metrics, test_step_flops = self.test()
         self.run_test_flops += test_step_flops
@@ -329,6 +339,8 @@ class LoRATrainer:
                 "test/step_flops": test_step_flops,
                 "test/cumulative_flops": self.run_test_flops,
                 "test/is_final": True,
+                "test/is_best_checkpoint": self.best_checkpoint_path is not None,
+                "test/checkpoint_used": os.path.basename(self.best_checkpoint_path) if self.best_checkpoint_path else "final_state",
                 "final/test_loss": test_metrics.get("test/loss", 0),
                 "final/test_mse": test_metrics.get("test/mse", 0),
                 "final/test_mae": test_metrics.get("test/mae", 0),
@@ -633,6 +645,10 @@ class LoRATrainer:
         torch.save(checkpoint, checkpoint_path)
         print(f"Saved checkpoint to {checkpoint_path}")
         
+        # Store the path to the best checkpoint
+        if suffix == "best":
+            self.best_checkpoint_path = checkpoint_path
+        
         # Log checkpoint to wandb
         artifact = wandb.Artifact(
             name=f"checkpoint-step-{self.steps}", 
@@ -873,7 +889,7 @@ class LoRATrainer:
                 active_indices = active_samples.nonzero().squeeze(-1)
                 
                 # Handle case where active_indices is a scalar (only one active sample)
-                if active_indices.dim() == 0:
+                if (active_indices.dim() == 0):
                     active_indices = active_indices.unsqueeze(0)
                 
                 # Create active batch from individual tensors in list
