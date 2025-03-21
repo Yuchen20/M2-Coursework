@@ -114,11 +114,11 @@ def train_model():
     
     # Fixed hyperparameters as specified
     context_length = 128
-    batch_size = 4
-    max_steps = 2000
-    eval_interval = 600
+    batch_size = 16
+    max_steps = 500
+    eval_interval = 10000
     target_eval_pairs = 3
-    experiment_fraction = 0.2
+    experiment_fraction = 0.5
     test_size = 0.1
     val_size = 0.1
     
@@ -174,7 +174,7 @@ def train_model():
         learning_rate=config.learning_rate,
         max_steps=max_steps,
         eval_interval=eval_interval,
-        save_interval=max_steps//2,  # Save checkpoint halfway through
+        save_interval=max_steps//4,  # Save checkpoint halfway through
         target_eval_pairs=target_eval_pairs,
         project_name="M2-TimeSeriesForecasting-Sweep",
         run_name=run_name
