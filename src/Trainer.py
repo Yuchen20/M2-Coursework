@@ -394,27 +394,28 @@ class LoRATrainer:
         
         # Forward pass
         outputs = self.model(
-            input_ids=batch["input_ids"],
-            attention_mask=batch["attention_mask"],
-            labels=batch["target"]
+            batch["input_ids"],
+            labels=batch["input_ids"]
         )
+        # print(outputs)
+
         loss = outputs.loss
         
         # Calculate CE loss separately for logging (already included in outputs.loss)
         # We need this for detailed tracking
-        logits = outputs.logits[:, :-1, :]  # remove last position
-        targets = batch["target"][:, 1:]    # shift right for next token prediction
+        # logits = outputs.logits[:, :-1, :]  # remove last position
+        # targets = batch["target"][:, 1:]    # shift right for next token prediction
         
-        # Reshape for cross-entropy calculation
-        logits_flat = logits.reshape(-1, logits.size(-1))
-        targets_flat = targets.reshape(-1)
+        # # Reshape for cross-entropy calculation
+        # logits_flat = logits.reshape(-1, logits.size(-1))
+        # targets_flat = targets.reshape(-1)
         
-        # Calculate CE loss
-        ce_loss = torch.nn.functional.cross_entropy(
-            logits_flat, 
-            targets_flat, 
-            ignore_index=self.tokenizer.pad_token_id
-        )
+        # # Calculate CE loss
+        # ce_loss = torch.nn.functional.cross_entropy(
+        #     logits_flat, 
+        #     targets_flat, 
+        #     ignore_index=self.tokenizer.pad_token_id
+        # )
         
         # Backward pass and optimization
         self.accelerator.backward(loss)
@@ -424,7 +425,7 @@ class LoRATrainer:
         
         self.optimizer.step()
         
-        return loss.item(), ce_loss.item(), step_flops
+        return loss.item(), loss.item(), step_flops
     
     def log_gradient_stats(self, step=None):
         """Log gradient statistics for trainable parameters to wandb."""
