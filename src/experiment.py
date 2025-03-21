@@ -114,13 +114,13 @@ def train_model():
     
     # Fixed hyperparameters as specified
     context_length = 128
-    batch_size = 16
-    max_steps = 500
-    eval_interval = 10000
+    batch_size = 4
+    max_steps = 2000
+    eval_interval = 500
     target_eval_pairs = 3
     experiment_fraction = 0.5
-    test_size = 0.1
-    val_size = 0.1
+    test_size = 0.05
+    val_size = 0.05
     
     print(f"Using context_length={context_length}, max_steps={max_steps}, eval_interval={eval_interval}")
     
