@@ -419,6 +419,9 @@ class LoRATrainer:
         # Backward pass and optimization
         self.accelerator.backward(loss)
         
+        # Apply gradient clipping with max norm of 1.0
+        self.accelerator.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+        
         self.optimizer.step()
         
         return loss.item(), ce_loss.item(), step_flops
