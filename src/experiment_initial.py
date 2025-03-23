@@ -98,9 +98,6 @@ def train_model():
     # Initialize wandb first
     wandb.init()
     
-    # Now get hyperparameters from wandb.config
-    config = wandb.config
-    
     # Set random seeds for reproducibility
     torch.manual_seed(42)
     np.random.seed(42)
@@ -108,12 +105,9 @@ def train_model():
     # Clear CUDA cache
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-    
-    # Log experiment setup
-    print(f"Starting experiment with learning_rate={config.learning_rate}, lora_rank={config.lora_rank}")
-    
+        
     # Fixed hyperparameters as specified
-    context_length = 128
+    context_length = 512
     batch_size = 4
     max_steps = 2000
     eval_interval = 500
@@ -121,14 +115,17 @@ def train_model():
     experiment_fraction = 0.5
     test_size = 0.05
     val_size = 0.05
-    
+    learning_rate = 1e-5
+    lora_rank = 4
+
+
     print(f"Using context_length={context_length}, max_steps={max_steps}, eval_interval={eval_interval}")
     
     # Load model and tokenizer
     model, tokenizer = load_qwen()
     
     # Apply LoRA with the sweep's rank
-    model = apply_lora(model, config.lora_rank)
+    model = apply_lora(model, lora_rank)
     
     # Count trainable parameters
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -160,7 +157,7 @@ def train_model():
     )
     
     # Initialize trainer with unique run name for this experiment
-    run_name = f"lora-r{config.lora_rank}-lr{config.learning_rate:.0e}"
+    run_name = f"lora-r{lora_rank}-lr{learning_rate:.0e}"
     
     trainer = LoRATrainer(
         model,
@@ -169,9 +166,9 @@ def train_model():
         test_loader=test_loader,
         tokenizer=tokenizer,
         processor=data_master.processor,
-        lora_rank=config.lora_rank,
+        lora_rank=lora_rank,
         context_length=context_length,
-        learning_rate=config.learning_rate,
+        learning_rate=learning_rate,
         max_steps=max_steps,
         eval_interval=eval_interval,
         save_interval=max_steps//4,  # Save checkpoint halfway through
@@ -184,6 +181,9 @@ def train_model():
     print(f"Starting training for {max_steps} steps...")
     trainer.train()
     
-    print(f"Training complete for lr={config.learning_rate}, rank={config.lora_rank}")
+    print(f"Training complete for lr={learning_rate}, rank={lora_rank}")
     return trainer
 
+
+if __name__ == "__main__":
+    train_model()
