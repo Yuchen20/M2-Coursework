@@ -7,8 +7,10 @@ import wandb
 from tqdm import tqdm
 from pathlib import Path
 
-from .Trainer import LoRATrainer
-from .get_data import DataMaster
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from Trainer import LoRATrainer
+from get_data import DataMaster
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
@@ -115,8 +117,8 @@ def train_model():
     # Fixed hyperparameters as specified
     context_length = 128
     batch_size = 4
-    max_steps = 2000
-    eval_interval = 500
+    max_steps = 1000
+    eval_interval = 400
     target_eval_pairs = 3
     experiment_fraction = 0.5
     test_size = 0.05
@@ -174,7 +176,7 @@ def train_model():
         learning_rate=config.learning_rate,
         max_steps=max_steps,
         eval_interval=eval_interval,
-        save_interval=max_steps//4,  # Save checkpoint halfway through
+        save_interval=eval_interval,  # Save checkpoint halfway through
         target_eval_pairs=target_eval_pairs,
         project_name="M2-TimeSeriesForecasting-Sweep",
         run_name=run_name

@@ -4,9 +4,10 @@ import sys
 import argparse
 
 # Add the parent directory to the path for module imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.experiment import train_model
+
+from experiment import train_model
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a wandb hyperparameter sweep")
