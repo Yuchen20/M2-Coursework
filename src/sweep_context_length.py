@@ -3,7 +3,9 @@ import os
 import sys
 import argparse
 
-from src.experiment_context_length import train_model
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from experiment_context_length import train_model
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a wandb hyperparameter sweep")
