@@ -244,6 +244,12 @@ class DataMaster:
 
         self.processor = NumericalProcessor(tokenizer, self.train_trajectories)
 
+        if experiment_fraction == 1.0:
+            self.exp_train_trajectories = self.train_trajectories
+            self.exp_valid_trajectories = self.val_trajectories
+            self.exp_test_trajectories = self.test_trajectories
+            return
+
         # experiment dataset
         self.exp_train_trajectories, _ = train_test_split(self.train_trajectories, test_size=1 - experiment_fraction, random_state=42)
         self.exp_valid_trajectories, _ = train_test_split(self.val_trajectories, test_size=1 - experiment_fraction, random_state=42)
