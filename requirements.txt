@@ -10,3 +10,4 @@ ipywidgets
 matplotlib
 pandas
 wandb
+seaborn
