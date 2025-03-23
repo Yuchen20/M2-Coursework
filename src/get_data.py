@@ -2,7 +2,10 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 
-from .preprocessor import NumericalProcessor
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from preprocessor import NumericalProcessor
 from tqdm import tqdm
 import torch
 
