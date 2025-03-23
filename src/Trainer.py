@@ -5,7 +5,9 @@ import numpy as np
 import wandb
 from tqdm import tqdm
 from accelerate import Accelerator
-from .get_flops import QwenFlopsCalculator
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from get_flops import QwenFlopsCalculator
 import matplotlib.pyplot as plt
 from datetime import datetime
 from torch.optim import AdamW
