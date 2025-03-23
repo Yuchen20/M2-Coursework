@@ -10,8 +10,8 @@ from pathlib import Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
-from .Trainer import LoRATrainer
-from .get_data import DataMaster
+from Trainer import LoRATrainer
+from get_data import DataMaster
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
