@@ -37,7 +37,8 @@ class LoRATrainer:
         eval_interval=200,
         save_interval=200,
         max_steps=1000,
-        target_eval_pairs=3  # Number of forecast timestamps to evaluate
+        target_eval_pairs=3,  # Number of forecast timestamps to evaluate
+        max_flops_budget_percent=100.0  # Maximum percentage of FLOPS budget to use
     ):
         """
         Initialize the LoRA trainer.
@@ -62,6 +63,7 @@ class LoRATrainer:
             save_interval: Steps between saving checkpoints
             max_steps: Maximum steps to train for
             target_eval_pairs: Number of predator-prey pairs to forecast during evaluation
+            max_flops_budget_percent: Maximum percentage of FLOPS budget to use
         """
         self.model = model
         self.train_loader = train_loader
@@ -78,6 +80,7 @@ class LoRATrainer:
         self.max_steps = max_steps
         self.target_eval_pairs = target_eval_pairs
         self.learning_rate = learning_rate
+        self.max_flops_budget_percent = max_flops_budget_percent
         
         # Initialize optimizer
         self.optimizer = self._init_optimizer(learning_rate, weight_decay)
@@ -232,6 +235,15 @@ class LoRATrainer:
                 # Track per-step and cumulative FLOPS
                 self.run_train_flops += step_flops
                 
+                # Check if FLOPS budget percentage has been reached
+                current_flops_percent = (self.run_train_flops + self.run_val_flops + self.run_test_flops) / 1e17 * 100
+                if current_flops_percent >= self.max_flops_budget_percent:
+                    if self.accelerator.is_main_process:
+                        print(f"\nFLOPS budget limit of {self.max_flops_budget_percent:.2f}% reached at step {self.steps}.")
+                        print(f"Current FLOPS usage: {current_flops_percent:.2f}% ({self.run_train_flops + self.run_val_flops + self.run_test_flops:.2e} FLOPS)")
+                        print("Early stopping training loop.")
+                    break
+                
                 # Collect metrics for logging
                 if self.steps % self.log_interval == 0 and self.accelerator.is_main_process:
                     avg_loss = accumulated_loss / batch_count
@@ -298,6 +310,10 @@ class LoRATrainer:
                 # Check if we reached max steps
                 if self.steps >= self.max_steps:
                     break
+            
+            # If FLOPS budget is reached, break out of the epochs loop as well
+            if current_flops_percent >= self.max_flops_budget_percent:
+                break
             
             if self.accelerator.is_main_process:
                 epoch_time = time.time() - epoch_start_time
@@ -743,8 +759,7 @@ class LoRATrainer:
         # Update FLOPS in wandb summary (these are not step-specific)
         wandb.run.summary["flops_used"] = total_flops
         wandb.run.summary["flops_budget_percent"] = total_flops / 1e17 * 100
-        wandb.run.summary["flops_train_total"] = train_flops
-        wandb.run.summary["flops_val_total"] = val_flops
+        wandb.run.summary["flops_budget_percent_of_limit"] = (total_flops / 1e17 * 100) / self.max_flops_budget_percent * 100
         
         # Log detailed FLOPS breakdown
         flops_by_type = current_exp_flops.groupby('train_or_inference').agg({'flops': 'sum'})
