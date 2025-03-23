@@ -627,15 +627,15 @@ class LoRATrainer:
         # Create unwrapped model copy to save
         unwrapped_model = self.accelerator.unwrap_model(self.model)
         
-        # Save only LoRA parameters and lm_head.bias to save space
-        lora_state_dict = {
-            k: v for k, v in unwrapped_model.state_dict().items() 
-            if "lora" in k.lower() or "A" in k or "B" in k or "bias" in k
-        }
+        # Save all parameters that have gradients enabled
+        trainable_state_dict = {}
+        for name, param in unwrapped_model.named_parameters():
+            if param.requires_grad:
+                trainable_state_dict[name] = param
         
         # Save checkpoint
         checkpoint = {
-            "model": lora_state_dict,
+            "model": trainable_state_dict,
             "optimizer": self.optimizer.state_dict(),
             "steps": self.steps,
             "best_val_loss": self.best_val_loss,
@@ -658,7 +658,7 @@ class LoRATrainer:
         )
         artifact.add_file(checkpoint_path)
         wandb.log_artifact(artifact)
-    
+
     def load_checkpoint(self, checkpoint_path):
         """Load a model checkpoint."""
         if not os.path.exists(checkpoint_path):
