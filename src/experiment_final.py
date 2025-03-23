@@ -118,7 +118,7 @@ def train_model():
     test_size = 0.05
     val_size = 0.05
     learning_rate = 1e-5
-    lora_rank = 8
+    lora_rank = 4
     max_budget = 21
 
 
