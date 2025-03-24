@@ -119,7 +119,7 @@ def train_model():
     batch_size = 4
     max_steps = 500
     eval_interval = 100
-    target_eval_pairs = 10
+    target_eval_pairs = 5
     experiment_fraction = 0.5
     test_size = 0.1
     val_size = 0.1
