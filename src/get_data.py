@@ -29,7 +29,7 @@ class LotkaVolterraDataset(Dataset):
     Raises:
         AssertionError: If inputs don't meet requirements
     """
-    def __init__(self, data, processor, context_length=256, inference=False, target_eval_pairs = 1):
+    def __init__(self, data, processor, context_length=256, inference=False, target_eval_pairs = 10):
         super().__init__()
         # Input validation
         assert data is not None and len(data) > 0, "Data must be non-empty"
@@ -256,7 +256,7 @@ class DataMaster:
         self.exp_test_trajectories, _ = train_test_split(self.test_trajectories, test_size=1 - experiment_fraction, random_state=42)
 
 
-    def get_data(self, experiment=False, context_length=128, batch_size=4, target_eval_pairs=1):
+    def get_data(self, experiment=False, context_length=128, batch_size=4, target_eval_pairs=10):
         
         if experiment:
             train_trajectories = self.exp_train_trajectories

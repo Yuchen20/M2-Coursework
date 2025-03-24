@@ -120,11 +120,11 @@ def train_model():
     context_length = config.context_length
     batch_size = 4
     max_steps = 500
-    eval_interval = 400
-    target_eval_pairs = 3
+    eval_interval = 100
+    target_eval_pairs = 10
     experiment_fraction = 0.5
-    test_size = 0.05
-    val_size = 0.05
+    test_size = 0.1
+    val_size = 0.1
     lr = 1e-5
     lora_rank = 4
     

@@ -115,14 +115,14 @@ def train_model():
     print(f"Starting experiment with learning_rate={config.learning_rate}, lora_rank={config.lora_rank}")
     
     # Fixed hyperparameters as specified
-    context_length = 128
+    context_length = 512
     batch_size = 4
-    max_steps = 1000
-    eval_interval = 400
-    target_eval_pairs = 3
+    max_steps = 500
+    eval_interval = 100
+    target_eval_pairs = 10
     experiment_fraction = 0.5
-    test_size = 0.05
-    val_size = 0.05
+    test_size = 0.1
+    val_size = 0.1
     
     print(f"Using context_length={context_length}, max_steps={max_steps}, eval_interval={eval_interval}")
     

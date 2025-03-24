@@ -366,9 +366,9 @@ class QwenFlopsCalculator:
         
         # Project hidden states to vocabulary size
         # (B, S, H) @ (H, V) -> (B, S, V)
-        LM_head_flops = self.opFLops._MUL * batch_size * self.hidden_dim * self.vocab_size
-        LM_head_flops += self.opFLops._ADD * batch_size * (self.hidden_dim - 1) * self.vocab_size
-        LM_head_flops += self.opFLops._ADD * batch_size * self.vocab_size
+        LM_head_flops = self.opFLops._MUL * batch_size * self.hidden_dim * self.vocab_size  * seq_len
+        LM_head_flops += self.opFLops._ADD * batch_size * (self.hidden_dim - 1) * self.vocab_size  * seq_len
+        LM_head_flops += self.opFLops._ADD * batch_size * self.vocab_size * seq_len
 
         # Format the breakdown string
         FLOPS_breakdown = f"""LM Head FLOPs Breakdown:
@@ -584,3 +584,4 @@ if __name__ == "__main__":
             )
 
 
+50000 / 8 

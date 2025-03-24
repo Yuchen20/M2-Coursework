@@ -39,7 +39,7 @@ class LoRATrainer:
         eval_interval=200,
         save_interval=200,
         max_steps=1000,
-        target_eval_pairs=3,  # Number of forecast timestamps to evaluate
+        target_eval_pairs=10,  # Number of forecast timestamps to evaluate
         max_flops_budget_percent=100.0  # Maximum percentage of FLOPS budget to use
     ):
         """
@@ -931,14 +931,14 @@ class LoRATrainer:
                 active_input_ids = torch.stack([input_ids_list[i][-self.context_length:] for i in active_indices])
                 
                 # Log FLOPs for this inference step
-                self.flops_calculator.log_flops(
-                    batch_size=len(active_indices),
-                    seq_len=min(active_input_ids.size(1), self.context_length),
-                    rank=self.lora_rank,
-                    verbose=False,
-                    inference=True,
-                    description=f"{description}_batch"
-                )
+                # self.flops_calculator.log_flops(
+                #     batch_size=len(active_indices),
+                #     seq_len=min(active_input_ids.size(1), self.context_length),
+                #     rank=self.lora_rank,
+                #     verbose=False,
+                #     inference=True,
+                #     description=f"{description}_batch"
+                # )
                 
                 # Forward pass with context window for active samples
                 outputs = self.model(active_input_ids)

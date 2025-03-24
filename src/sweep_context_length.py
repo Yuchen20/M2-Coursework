@@ -16,7 +16,7 @@ if __name__ == "__main__":
     sweep_config = {
         "method": "grid",  # Use grid search to explore all combinations
         "metric": {
-            "name": "final_test_mse",  # Optimize for validation MSE
+            "name": "final_val_mse",  # Optimize for validation MSE
             "goal": "minimize"  # We want to minimize MSE
         },
         "parameters": {
