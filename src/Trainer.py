@@ -323,9 +323,6 @@ class LoRATrainer:
                 # print(f"Epoch {epoch} completed in {epoch_time:.2f} seconds")
                 progress_bar.close()
         
-        # Final evaluation - use full evaluation
-        val_metrics, val_step_flops = self.evaluate(quick_eval=False)
-        self.run_val_flops += val_step_flops
         
         # Load the best checkpoint before final testing
         if self.best_checkpoint_path is not None and os.path.exists(self.best_checkpoint_path):
@@ -335,6 +332,10 @@ class LoRATrainer:
         else:
             if self.accelerator.is_main_process:
                 print("Best checkpoint not found, using current model for testing")
+
+        # Final evaluation - use full evaluation
+        val_metrics, val_step_flops = self.evaluate(quick_eval=False)
+        self.run_val_flops += val_step_flops
         
         # Final test
         test_metrics, test_step_flops = self.test()
