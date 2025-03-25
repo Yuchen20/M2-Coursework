@@ -633,7 +633,7 @@ class LoRATrainer:
             with torch.no_grad():
                 outputs = self.model(
                     inputs["input_ids"],
-                    labels=inputs["target"] if "target" in inputs else inputs["input_ids"]
+                    labels=inputs["input_ids"]
                 )
                 loss = outputs.loss.item()
                 losses.append(loss)
