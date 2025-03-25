@@ -112,11 +112,11 @@ def train_model():
     context_length = 768
     batch_size = 4
     max_steps = 8000
-    eval_interval = 500
+    eval_interval = 50
     target_eval_pairs = 5
     experiment_fraction = 1.0
-    test_size = 0.05
-    val_size = 0.05
+    test_size = 0.1
+    val_size = 0.1
     learning_rate = 1e-5
     lora_rank = 4
     max_budget = 21

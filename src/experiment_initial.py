@@ -113,9 +113,9 @@ def train_model():
     context_length = 512
     batch_size = 4
     max_steps = 1000
-    eval_interval = 200
+    eval_interval = 50
     target_eval_pairs = 5
-    experiment_fraction = 0.5
+    experiment_fraction = 1.0
     test_size = 0.1
     val_size = 0.1
     learning_rate = 1e-5
