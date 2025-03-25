@@ -60,10 +60,14 @@ class LotkaVolterraDataset(Dataset):
             for start_idx in range(0, len(input_ids) - self.context_length, self.stride):
                 end_idx = start_idx + self.context_length
                 
+                # Skip this chunk if end_idx goes beyond sequence length
+                if end_idx > len(input_ids):
+                    continue
+                
                 # For training, we need the target to be the next tokens
                 if not inference:
+                    # Skip if we can't get the next token for the last position
                     if end_idx + 1 > len(input_ids):
-                        # Skip if we can't get the next token for the last position
                         continue
                     
                     input_chunk = input_ids[start_idx:end_idx]
@@ -71,25 +75,22 @@ class LotkaVolterraDataset(Dataset):
                     
                     self.processed_chunks.append({
                         'input_ids': input_chunk,
-                        'attention_mask': (input_chunk != self.processor.tokenizer.pad_token_id).float(),
+                        # 'attention_mask': (input_chunk != self.processor.tokenizer.pad_token_id).float(),
                         'target': target_chunk,
                     })
                 # For inference, we need to include more future tokens for evaluation
                 else:
                     input_chunk = input_ids[start_idx:end_idx]
-                    
-                    # Make sure we have enough future tokens for evaluation
-                    target_length = min(self.context_length, len(input_ids) - end_idx)
-                    if target_length <= 0:
+
+                    if end_idx+self.target_eval_pairs * 12 > len(input_ids):
                         continue
                         
-                    target_chunk = input_ids[end_idx:end_idx+target_length]
+                    target_chunk = input_ids[end_idx:end_idx+self.target_eval_pairs * 14]
                     
                     self.processed_chunks.append({
                         'input_ids': input_chunk,
-                        'attention_mask': (input_chunk != self.processor.tokenizer.pad_token_id).float(),
+                        # 'attention_mask': (input_chunk != self.processor.tokenizer.pad_token_id).float(),
                         'target': target_chunk,
-                        'full_sequence': []
                     })
         
         print(f"Created {len(self.processed_chunks)} chunks from {len(self.data)} sequences")
