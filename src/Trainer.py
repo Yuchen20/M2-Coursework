@@ -274,7 +274,7 @@ class LoRATrainer:
                         self.log_gradient_stats(self.steps)
                 
                 # Run evaluation and log FLOPS
-                if self.steps % self.eval_interval == 0 and self.steps != self.max_steps:
+                if self.steps % self.eval_interval == 0:
                     # Use quick evaluation during training
                     val_metrics, val_step_flops = self.evaluate(quick_eval=True)
                     self.run_val_flops += val_step_flops
