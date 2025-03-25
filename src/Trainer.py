@@ -275,7 +275,8 @@ class LoRATrainer:
                 
                 # Run evaluation and log FLOPS
                 if self.steps % self.eval_interval == 0 and self.steps != self.max_steps:
-                    val_metrics, val_step_flops = self.evaluate()
+                    # Use quick evaluation during training
+                    val_metrics, val_step_flops = self.evaluate(quick_eval=True)
                     self.run_val_flops += val_step_flops
                     
                     if self.accelerator.is_main_process:
@@ -322,8 +323,8 @@ class LoRATrainer:
                 # print(f"Epoch {epoch} completed in {epoch_time:.2f} seconds")
                 progress_bar.close()
         
-        # Final evaluation
-        val_metrics, val_step_flops = self.evaluate()
+        # Final evaluation - use full evaluation
+        val_metrics, val_step_flops = self.evaluate(quick_eval=False)
         self.run_val_flops += val_step_flops
         
         # Load the best checkpoint before final testing
@@ -557,8 +558,14 @@ class LoRATrainer:
             if lora_param_metrics:
                 self._log_to_wandb(lora_param_metrics, step)
     
-    def evaluate(self):
-        """Evaluate the model on the validation set."""
+    def evaluate(self, quick_eval=True):
+        """
+        Evaluate the model on the validation set.
+        
+        Args:
+            quick_eval: If True, only calculate loss without generation (faster)
+                       If False, perform full evaluation with generation and metrics
+        """
         # Clean tqdm instance
         tqdm._instances.clear()
         self.model.eval()
@@ -572,12 +579,21 @@ class LoRATrainer:
         # Create a dataloader from validation dataset
         dataloader = self.val_loader
         
-        # Use the evaluation_loop function to perform evaluation
-        metrics = self.evaluation_loop(
-            dataloader=dataloader,
-            description="Validation",
-            metric_key_prefix="val"
-        )
+        # Use different evaluation methods based on mode
+        if quick_eval:
+            # Fast evaluation - just calculate loss like during training
+            metrics = self._quick_evaluation_loop(
+                dataloader=dataloader,
+                description="Quick Validation",
+                metric_key_prefix="val"
+            )
+        else:
+            # Full evaluation with generation and detailed metrics
+            metrics = self.evaluation_loop(
+                dataloader=dataloader,
+                description="Validation",
+                metric_key_prefix="val"
+            )
         
         # Add step to metrics
         metrics["val/step"] = self.steps
@@ -587,13 +603,47 @@ class LoRATrainer:
         val_step_flops = flops_after - flops_before
         metrics["val/step_flops"] = val_step_flops
         
-        # Let the calling code handle logging with _log_to_wandb
-        # removing direct wandb.log call here
-        
         # Unmerge LoRA weights after evaluation
         self.unmerge_lora_weights()
         
         return metrics, val_step_flops
+
+    def _quick_evaluation_loop(self, dataloader, description, metric_key_prefix="eval"):
+        """
+        Fast evaluation loop that only calculates loss without generation.
+        
+        Args:
+            dataloader: DataLoader for evaluation data
+            description: Description for progress bar
+            metric_key_prefix: Prefix for metric keys
+            
+        Returns:
+            dict: Dictionary of metrics
+        """
+        self.model.eval()
+        
+        # Track metrics
+        losses = []
+        
+        # Process batches
+        for batch_idx, inputs in enumerate(tqdm(dataloader, desc=description, leave=False)):
+            inputs = self._prepare_inputs(inputs)
+            
+            # Forward pass
+            with torch.no_grad():
+                outputs = self.model(
+                    inputs["input_ids"],
+                    labels=inputs["target"] if "target" in inputs else inputs["input_ids"]
+                )
+                loss = outputs.loss.item()
+                losses.append(loss)
+        
+        # Calculate metrics
+        metrics = {}
+        if losses:
+            metrics[f"{metric_key_prefix}/loss"] = np.mean(losses)
+        
+        return metrics
 
     def test(self):
         """Evaluate the model on the test set."""
@@ -670,7 +720,7 @@ class LoRATrainer:
         
         # Log checkpoint to wandb
         artifact = wandb.Artifact(
-            name=f"checkpoint-step-{self.steps}", 
+            name=f"{wandb.run.name}-checkpoint-step-{self.steps}", 
             type="model",
             description=f"Model checkpoint at step {self.steps}"
         )
