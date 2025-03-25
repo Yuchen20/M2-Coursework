@@ -125,8 +125,8 @@ def train_model():
     experiment_fraction = 1.0
     test_size = 0.1
     val_size = 0.1
-    lr = 1e-5
-    lora_rank = 4
+    lr = 1e-4
+    lora_rank = 8
     
     print(f"Using context_length={context_length}, max_steps={max_steps}, eval_interval={eval_interval}")
     
