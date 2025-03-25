@@ -572,7 +572,7 @@ class LoRATrainer:
         self.model.eval()
         
         # Merge LoRA weights for evaluation
-        self.merge_lora_weights()
+        # self.merge_lora_weights()
         
         # Track FLOPS before validation
         flops_before = self._get_current_flops()
@@ -605,7 +605,7 @@ class LoRATrainer:
         metrics["val/step_flops"] = val_step_flops
         
         # Unmerge LoRA weights after evaluation
-        self.unmerge_lora_weights()
+        # self.unmerge_lora_weights()
         
         return metrics, val_step_flops
 
@@ -651,7 +651,7 @@ class LoRATrainer:
         self.model.eval()
         
         # Merge LoRA weights for testing
-        self.merge_lora_weights()
+        # self.merge_lora_weights()
         
         # Track FLOPS before testing
         flops_before = self._get_current_flops()
@@ -678,7 +678,7 @@ class LoRATrainer:
         # removing direct wandb.log call here
         
         # Unmerge LoRA weights after testing
-        self.unmerge_lora_weights()
+        # self.unmerge_lora_weights()
         
         return metrics, test_step_flops
 
