@@ -111,7 +111,7 @@ def train_model():
     # Fixed hyperparameters as specified
     context_length = 768
     batch_size = 4
-    max_steps = 8000
+    max_steps = 10000
     eval_interval = 50
     target_eval_pairs = 5
     experiment_fraction = 1.0
@@ -119,7 +119,7 @@ def train_model():
     val_size = 0.1
     learning_rate = 1e-4
     lora_rank = 8
-    max_budget = 21
+    max_budget = 40
 
 
     print(f"Using context_length={context_length}, max_steps={max_steps}, eval_interval={eval_interval}")
