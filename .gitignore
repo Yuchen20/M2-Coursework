@@ -172,3 +172,7 @@ notebooks/wandb/run-20250318_173640-mqn0bvsf/logs/debug.log
 /log_files
 /wandb
 /checkpoints
+notebooks/checkpoints
+notebooks/log_files
+notebooks/checkpoints/checkpoint_best.pth
+notebooks/log_files/flops_log.csv
