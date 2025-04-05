@@ -8,3 +8,4 @@
 **/wandb/
 /notebooks/checkpoints
 /notebooks/log_files
+/notebooks/*.py
