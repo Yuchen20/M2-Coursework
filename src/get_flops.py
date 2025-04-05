@@ -348,14 +348,15 @@ class QwenFlopsCalculator:
 
         return total_flops, FLOPS_breakdown
     
-
     def get_LM_head(self, batch_size: int, seq_len: int, verbose: bool = False, inference: bool = False) -> Tuple[int, str]:
         """
         Calculate FLOPs for the final Language Model head, where we project the hidden states to the vocabulary size.
+        
         Args:
             batch_size: Number of samples in a batch
             seq_len: Sequence length (number of tokens)
             verbose: Whether to print detailed breakdown
+            inference: Whether this is for inference (affects calculation)
             
         Returns:
             Tuple of (total_flops, breakdown_string)
@@ -366,8 +367,8 @@ class QwenFlopsCalculator:
         
         # Project hidden states to vocabulary size
         # (B, S, H) @ (H, V) -> (B, S, V)
-        LM_head_flops = self.opFLops._MUL * batch_size * self.hidden_dim * self.vocab_size  * seq_len
-        LM_head_flops += self.opFLops._ADD * batch_size * (self.hidden_dim - 1) * self.vocab_size  * seq_len
+        LM_head_flops = self.opFLops._MUL * batch_size * self.hidden_dim * self.vocab_size * seq_len
+        LM_head_flops += self.opFLops._ADD * batch_size * (self.hidden_dim - 1) * self.vocab_size * seq_len
         LM_head_flops += self.opFLops._ADD * batch_size * self.vocab_size * seq_len
 
         # Format the breakdown string
@@ -382,6 +383,7 @@ class QwenFlopsCalculator:
     def get_loss_flops(self, batch_size: int, seq_len: int, verbose: bool = False) -> Tuple[int, str]:
         """
         Calculate FLOPs for the training loss
+        
         Args:
             batch_size: Number of samples in a batch
             seq_len: Sequence length (number of tokens)
@@ -390,14 +392,12 @@ class QwenFlopsCalculator:
         Returns:
             Tuple of (total_flops, breakdown_string)
         """
-        Softmax_flops = self.opFLops._EXP * batch_size * self.vocab_size  * seq_len  # exp for each element
+        Softmax_flops = self.opFLops._EXP * batch_size * self.vocab_size * seq_len  # exp for each element
         Softmax_flops += self.opFLops._ADD * batch_size * self.vocab_size * seq_len  # sum for denominator
-        Softmax_flops += self.opFLops._DIV * batch_size * self.vocab_size  * seq_len  # division for normalization
+        Softmax_flops += self.opFLops._DIV * batch_size * self.vocab_size * seq_len  # division for normalization
 
-        # Format the breakdown string
-        # do logithm and time
-        log_and_time_flops = (self.opFLops._LOG + self.opFLops._MUL) * batch_size  * seq_len  # log and multiply by true label
-
+        # Log and multiply by true label
+        log_and_time_flops = (self.opFLops._LOG + self.opFLops._MUL) * batch_size * seq_len
 
         FLOPS_breakdown = f"""Loss FLOPs Breakdown:
     Softmax:               {Softmax_flops:,} FLOPs - Computing softmax for loss calculation

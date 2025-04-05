@@ -1,0 +1,735 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>get_flops &mdash; Time Series Forecasting with LLMs beta documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=a6e103b4" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=f0d2c090"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Time Series Forecasting with LLMs
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Jupyter Notebooks</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/1_dataset_preprocess.html">Appendix: Additional Samples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/2_flops_calculation.html">FLOPS Scaling with Different Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/3_untrained_behaviour.html">Evaluating Untrained LLM Performance on Time Series Forecasting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/3_untrained_behaviour.html#Flops-Analysis">Flops Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/3_untrained_behaviour.html#Potential-Catastrophic-Forgetting">Potential Catastrophic Forgetting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/3_untrained_behaviour.html#Tokenization-Padding-Methods">Tokenization Padding Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/4_train_lora_llm.html">Train LoRA-LLM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/4_train_lora_llm.html#Improved-LoRA-Training">Improved LoRA Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/4_train_lora_llm.html#Training-the-Model">Training the Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/5_initial_train_behaviour.html">Evaluating Trained LLM Performance on Time Series Forecasting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/5_initial_train_behaviour.html#Flops-Analysis">Flops Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/6_fully_trained_behaviour.html">Evaluating Fully Trained LLM Performance on Time Series Forecasting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/6_fully_trained_behaviour.html#Flops-Analysis">Flops Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/7_weight_visualize.html">LM Bias Weight Visualization</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Time Series Forecasting with LLMs</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">get_flops</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for get_flops</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">uuid4</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="c1"># Addition/Subtraction/Negation (ﬂoat OR integer) 1</span>
+<span class="c1"># Multiplication/Division/Inverse (ﬂoat OR integer) 1</span>
+<span class="c1"># ReLU/Absolute Value 1</span>
+<span class="c1"># Exponentiation/Logarithm 10</span>
+<span class="c1"># Sine/Cosine/Square Root 10</span>
+<div class="viewcode-block" id="OperationFlops">
+<a class="viewcode-back" href="../index.html#get_flops.OperationFlops">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OperationFlops</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    FLOPs for different operations:</span>
+<span class="sd">        Additions, Subtractions, Negations: 1</span>
+<span class="sd">        Multiplications, Divisions, Inverses: 1</span>
+<span class="sd">        ReLU, Absolute Value: 1</span>
+<span class="sd">        Exponentiation, Logarithm: 10</span>
+<span class="sd">        Sine, Cosine, Square Root: 10</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_ADD</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">_SUB</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">_NEG</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">_MUL</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">_DIV</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">_INV</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">_RELU</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">_ABS</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">_EXP</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">_LOG</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">_SIN</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">_COS</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">_SQRT</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span></div>
+
+
+
+<div class="viewcode-block" id="QwenFlopsCalculator">
+<a class="viewcode-back" href="../index.html#get_flops.QwenFlopsCalculator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">QwenFlopsCalculator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate FLOPs for the QWEN 2.5 model components.</span>
+<span class="sd">    </span>
+<span class="sd">    This class provides methods to calculate FLOPs for various components</span>
+<span class="sd">    of the QWEN 2.5 architecture including attention, normalization,</span>
+<span class="sd">    feed-forward networks, and LoRA adapters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize with QWEN 2.5 model architecture parameters.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">24</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">896</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">14</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4864</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">151936</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span> <span class="o">=</span> <span class="n">OperationFlops</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_name</span> <span class="o">=</span> <span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_folder</span> <span class="o">=</span> <span class="s2">&quot;log_files&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_folder</span><span class="p">,</span> <span class="s2">&quot;flops_log.csv&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_folder</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_folder</span><span class="p">)</span>
+            <span class="c1"># also make the flops_log.csv</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;name,batch_size,seq_len,rank,flops,timestamp,train_or_inference,description</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+   
+        
+
+        
+        <span class="c1"># Run validation checks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_parameters</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate the model parameters to ensure consistency.&quot;&quot;&quot;</span>
+        <span class="c1"># Check that head_dim * num_heads is consistent</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;head_dim (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="si">}</span><span class="s2">) * num_heads (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="si">}</span><span class="s2">) = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;should equal hidden_dim (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Check that the attention_dim is valid</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;attention_dim must be positive, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span><span class="si">}</span><span class="s2">&quot;</span>
+        
+        <span class="c1"># Check that the ffn_dim is valid (typically 4x hidden_dim)</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;ffn_dim (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span><span class="si">}</span><span class="s2">) should be larger than hidden_dim (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+
+<div class="viewcode-block" id="QwenFlopsCalculator.get_attention_flops">
+<a class="viewcode-back" href="../index.html#get_flops.QwenFlopsCalculator.get_attention_flops">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_attention_flops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate FLOPs for the attention mechanism.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            batch_size: Number of samples in a batch</span>
+<span class="sd">            seq_len: Sequence length (number of tokens)</span>
+<span class="sd">            verbose: Whether to print detailed breakdown</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (total_flops, breakdown_string)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Input validation</span>
+        <span class="k">assert</span> <span class="n">batch_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Batch size must be positive, got </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">seq_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Sequence length must be positive, got </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">&quot;</span>
+        
+        <span class="c1"># project to qkv</span>
+        <span class="c1"># (B, S, H) @ (H, 3 * AH * N) -&gt; (B, S, 3 * AH * N)</span>
+        <span class="n">qkv_mult_flops</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">)</span>
+        <span class="n">qkv_mult_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">)</span>
+
+        <span class="c1"># add bias to qkv</span>
+        <span class="n">qkv_mult_flops</span> <span class="o">+=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span>
+        
+        <span class="c1"># add ROPE (Rotary Positional Embedding) to Q and K</span>
+        <span class="c1"># Ignore FLOPS for computing positional encodings, but include cost of applying them</span>
+        <span class="c1"># This typically involves complex multiplication which costs 4 real multiplications and 2 additions</span>
+        <span class="c1"># qk_rope_flops = self.opFLops._MUL * 4 * batch_size * seq_len * 2 * self.attention_dim * self.num_heads</span>
+        <span class="n">qk_rope_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span>
+
+        <span class="c1"># QK^T</span>
+        <span class="c1"># (B, H, S, AH) @ (B, H, AH, S) -&gt; (B, H, S, S)</span>
+        <span class="n">qk_mult_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span> <span class="o">*</span> <span class="n">seq_len</span>
+        <span class="n">qk_mult_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">seq_len</span>
+
+        <span class="c1"># divide by sqrt(attention_dim)</span>
+        <span class="c1"># (batch_size, num_heads, seq_len, seq_len) -&gt; (batch_size, num_heads, seq_len, seq_len)</span>
+        <span class="n">sqrt_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_SQRT</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="mi">1</span>  <span class="c1"># Only compute sqrt once</span>
+        <span class="n">sqrt_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_DIV</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="n">seq_len</span>
+
+        <span class="c1"># attention maps addition</span>
+        <span class="c1"># (B, H, S, S) + (B, H, S, S) -&gt; (B, H, S, S)</span>
+        <span class="n">attention_map_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="n">seq_len</span>
+
+        <span class="c1"># softmax</span>
+        <span class="c1"># (batch_size, num_heads, seq_len, seq_len) -&gt; (batch_size, num_heads, seq_len, seq_len)</span>
+        <span class="n">softmax_flops</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_EXP</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="n">seq_len</span>  <span class="c1"># exp for each element</span>
+        <span class="n">softmax_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="n">seq_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># sum for denominator</span>
+        <span class="n">softmax_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_DIV</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="n">seq_len</span>  <span class="c1"># division for normalization</span>
+
+        <span class="c1"># attention output: attn_weights @ V</span>
+        <span class="c1"># (B, H, S, S) @ (B, H, S, AH) -&gt; (B, H, S, AH)</span>
+        <span class="n">attention_value_flops</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span>
+        <span class="n">attention_value_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="n">seq_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span> <span class="o">-</span> <span class="mi">1</span>
+
+        <span class="c1"># attention output projection</span>
+        <span class="c1"># (B, S, AH * N) @ (AH * N, H) -&gt; (B, S, H)</span>
+        <span class="n">attention_output_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span>
+        <span class="n">attention_output_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span>
+
+        <span class="c1"># Total FLOPs</span>
+        <span class="n">total_flops</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">qkv_mult_flops</span> <span class="o">+</span> <span class="n">qk_rope_flops</span> <span class="o">+</span> <span class="n">qk_mult_flops</span> <span class="o">+</span> <span class="n">attention_map_flops</span> <span class="o">+</span>
+            <span class="n">sqrt_flops</span> <span class="o">+</span> <span class="n">softmax_flops</span> <span class="o">+</span> <span class="n">attention_value_flops</span> <span class="o">+</span> <span class="n">attention_output_flops</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Format the breakdown string</span>
+        <span class="n">FLOPS_breakdown</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Attention FLOPs Breakdown:</span>
+<span class="s2">    QKV Projection:        </span><span class="si">{</span><span class="n">qkv_mult_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Matrix multiplication to project embeddings to QKV</span>
+<span class="s2">    Rotary Embedding:      </span><span class="si">{</span><span class="n">qk_rope_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Applying rotary position embeddings to Q and K</span>
+<span class="s2">    QK^T Multiplication:   </span><span class="si">{</span><span class="n">qk_mult_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Computing attention scores via Q*K^T</span>
+<span class="s2">    Attention Maps:        </span><span class="si">{</span><span class="n">attention_map_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Adding attention maps across heads</span>
+<span class="s2">    Scaling:               </span><span class="si">{</span><span class="n">sqrt_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Dividing by sqrt(attention_dim)</span>
+<span class="s2">    Softmax:               </span><span class="si">{</span><span class="n">softmax_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Computing softmax for attention weights</span>
+<span class="s2">    Attention*V:           </span><span class="si">{</span><span class="n">attention_value_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Applying attention weights to values</span>
+<span class="s2">    Output Projection:     </span><span class="si">{</span><span class="n">attention_output_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Projecting attention outputs back to hidden dimension</span>
+<span class="s2">    --- </span>
+<span class="s2">    Total Attention FLOPs: </span><span class="si">{</span><span class="n">total_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+        
+        <span class="c1"># Verify that the sum matches the total</span>
+        <span class="k">assert</span> <span class="n">total_flops</span> <span class="o">==</span> <span class="p">(</span>
+            <span class="n">qkv_mult_flops</span> <span class="o">+</span> <span class="n">qk_rope_flops</span> <span class="o">+</span> <span class="n">qk_mult_flops</span> <span class="o">+</span> <span class="n">attention_map_flops</span> <span class="o">+</span>
+            <span class="n">sqrt_flops</span> <span class="o">+</span> <span class="n">softmax_flops</span> <span class="o">+</span> <span class="n">attention_value_flops</span> <span class="o">+</span> <span class="n">attention_output_flops</span>
+        <span class="p">),</span> <span class="s2">&quot;Attention FLOPs calculation mismatch&quot;</span>
+
+        <span class="k">return</span> <span class="n">total_flops</span><span class="p">,</span> <span class="n">FLOPS_breakdown</span></div>
+
+
+<div class="viewcode-block" id="QwenFlopsCalculator.get_RMSNorm_flops">
+<a class="viewcode-back" href="../index.html#get_flops.QwenFlopsCalculator.get_RMSNorm_flops">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_RMSNorm_flops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate FLOPs for the RMSNorm operation.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            batch_size: Number of samples in a batch</span>
+<span class="sd">            seq_len: Sequence length (number of tokens)</span>
+<span class="sd">            verbose: Whether to print detailed breakdown</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (total_flops, breakdown_string)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Input validation</span>
+        <span class="k">assert</span> <span class="n">batch_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Batch size must be positive, got </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">seq_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Sequence length must be positive, got </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">&quot;</span>
+        
+        <span class="c1"># Step 1: Calculate variance = hidden_states.pow(2).mean(-1, keepdim=True)</span>
+        <span class="c1"># Square each element: (B, S, H) -&gt; (B, S, H)</span>
+        <span class="n">variance_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span>
+        
+        <span class="c1"># Sum across hidden dimension: (B, S, H) -&gt; (B, S, 1)</span>
+        <span class="n">variance_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        
+        <span class="c1"># Divide by hidden_dim: (B, S, 1)</span>
+        <span class="n">variance_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_DIV</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="mi">1</span>
+        
+        <span class="c1"># Step 2: Apply normalization: hidden_states * torch.rsqrt(variance + self.variance_epsilon)</span>
+        <span class="c1"># Add epsilon: (B, S, 1) + scalar</span>
+        <span class="n">var_to_hidden_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="mi">1</span>
+        
+        <span class="c1"># Calculate rsqrt: (B, S, 1)</span>
+        <span class="n">var_to_hidden_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_SQRT</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="mi">1</span>
+        <span class="n">var_to_hidden_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_DIV</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="mi">1</span>
+        
+        <span class="c1"># Multiply with hidden_states: (B, S, H) * (B, S, 1)</span>
+        <span class="n">var_to_hidden_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span>
+
+        <span class="c1"># Step 3: Apply weight: self.weight * hidden_states</span>
+        <span class="c1"># self.weight is a parameter of shape (hidden_dim,)</span>
+        <span class="n">weight_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span>
+
+        <span class="c1"># Total FLOPs</span>
+        <span class="n">total_flops</span> <span class="o">=</span> <span class="n">variance_flops</span> <span class="o">+</span> <span class="n">var_to_hidden_flops</span> <span class="o">+</span> <span class="n">weight_flops</span>
+
+        <span class="c1"># Format the breakdown string</span>
+        <span class="n">FLOPS_breakdown</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;RMSNorm FLOPs Breakdown:</span>
+<span class="s2">    Variance Calculation:  </span><span class="si">{</span><span class="n">variance_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Computing squared mean for normalization</span>
+<span class="s2">    Normalization:         </span><span class="si">{</span><span class="n">var_to_hidden_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Applying normalization factor to hidden states</span>
+<span class="s2">    Weight Application:    </span><span class="si">{</span><span class="n">weight_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Applying learnable weight parameters</span>
+<span class="s2">    ---</span>
+<span class="s2">    Total RMSNorm FLOPs:   </span><span class="si">{</span><span class="n">total_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+        <span class="c1"># Verify that the sum matches the total</span>
+        <span class="k">assert</span> <span class="n">total_flops</span> <span class="o">==</span> <span class="p">(</span><span class="n">variance_flops</span> <span class="o">+</span> <span class="n">var_to_hidden_flops</span> <span class="o">+</span> <span class="n">weight_flops</span><span class="p">),</span> <span class="s2">&quot;RMSNorm FLOPs calculation mismatch&quot;</span>
+
+        <span class="k">return</span> <span class="n">total_flops</span><span class="p">,</span> <span class="n">FLOPS_breakdown</span></div>
+
+    
+<div class="viewcode-block" id="QwenFlopsCalculator.get_ffn_flops">
+<a class="viewcode-back" href="../index.html#get_flops.QwenFlopsCalculator.get_ffn_flops">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_ffn_flops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate FLOPs for the Feed-Forward Network.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            batch_size: Number of samples in a batch</span>
+<span class="sd">            seq_len: Sequence length (number of tokens)</span>
+<span class="sd">            verbose: Whether to print detailed breakdown</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (total_flops, breakdown_string)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Input validation</span>
+        <span class="k">assert</span> <span class="n">batch_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Batch size must be positive, got </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">seq_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Sequence length must be positive, got </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># Gate projection: (B, S, H) @ (H, FH) -&gt; (B, S, FH)</span>
+        <span class="n">gated_proj_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span>
+        <span class="n">gated_proj_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span>
+
+        <span class="c1"># SiLU activation for gate projection</span>
+        <span class="c1"># SiLU(x) = x * sigmoid(x) where sigmoid(x) = 1 / (1 + exp(-x))</span>
+        <span class="c1"># Computing sigmoid: 1 negation, 1 exp, 1 addition, 1 division</span>
+        <span class="n">gated_proj_flops</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_NEG</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_EXP</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_DIV</span>
+        <span class="p">)</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span>
+        
+        <span class="c1"># Multiply with x: (B, S, FH) * sigmoid(B, S, FH) -&gt; (B, S, FH)</span>
+        <span class="n">gated_proj_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span>
+
+        <span class="c1"># Up projection: (B, S, H) @ (H, FH) -&gt; (B, S, FH) </span>
+        <span class="n">up_proj_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span>
+        <span class="n">up_proj_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span>
+
+        <span class="c1"># Element-wise multiplication of gate and up projections</span>
+        <span class="c1"># (B, S, FH) * (B, S, FH) -&gt; (B, S, FH)</span>
+        <span class="n">gated_embedding_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span>
+
+        <span class="c1"># Down projection: (B, S, FH) @ (FH, H) -&gt; (B, S, H)</span>
+        <span class="n">down_proj_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span>
+        <span class="n">down_proj_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ffn_dim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span>
+
+        <span class="c1"># Total FLOPs</span>
+        <span class="n">total_flops</span> <span class="o">=</span> <span class="n">gated_proj_flops</span> <span class="o">+</span> <span class="n">up_proj_flops</span> <span class="o">+</span> <span class="n">gated_embedding_flops</span> <span class="o">+</span> <span class="n">down_proj_flops</span>
+
+        <span class="c1"># Format the breakdown string</span>
+        <span class="n">FLOPS_breakdown</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;FFN FLOPs Breakdown:</span>
+<span class="s2">    Gate Projection:       </span><span class="si">{</span><span class="n">gated_proj_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Projecting to gating dimension with SiLU activation</span>
+<span class="s2">    Up Projection:         </span><span class="si">{</span><span class="n">up_proj_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Projecting to intermediate dimension</span>
+<span class="s2">    Gated Multiplication:  </span><span class="si">{</span><span class="n">gated_embedding_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Element-wise multiplication of gate and up projections</span>
+<span class="s2">    Down Projection:       </span><span class="si">{</span><span class="n">down_proj_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Projecting back to hidden dimension</span>
+<span class="s2">    ---</span>
+<span class="s2">    Total FFN FLOPs:       </span><span class="si">{</span><span class="n">total_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+        <span class="c1"># Verify that the sum matches the total</span>
+        <span class="k">assert</span> <span class="n">total_flops</span> <span class="o">==</span> <span class="p">(</span><span class="n">gated_proj_flops</span> <span class="o">+</span> <span class="n">up_proj_flops</span> <span class="o">+</span> <span class="n">gated_embedding_flops</span> <span class="o">+</span> <span class="n">down_proj_flops</span><span class="p">),</span> <span class="s2">&quot;FFN FLOPs calculation mismatch&quot;</span>
+
+        <span class="k">return</span> <span class="n">total_flops</span><span class="p">,</span> <span class="n">FLOPS_breakdown</span></div>
+
+    
+<div class="viewcode-block" id="QwenFlopsCalculator.get_lora_flops">
+<a class="viewcode-back" href="../index.html#get_flops.QwenFlopsCalculator.get_lora_flops">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_lora_flops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate FLOPs for the LoRA adaptation.</span>
+<span class="sd">        </span>
+<span class="sd">        Note that LoRA flops only calculate the flops of the LoRA layer itself, </span>
+<span class="sd">        not including the frozen linear layer.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            batch_size: Number of samples in a batch</span>
+<span class="sd">            seq_len: Sequence length (number of tokens)</span>
+<span class="sd">            rank: The rank of the LoRA adaptation</span>
+<span class="sd">            verbose: Whether to print detailed breakdown</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (total_flops, breakdown_string)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Input validation</span>
+        <span class="k">assert</span> <span class="n">batch_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Batch size must be positive, got </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">seq_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Sequence length must be positive, got </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">rank</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;LoRA rank must be positive, got </span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2">&quot;</span>
+        
+        <span class="c1"># Down projection: (B, S, H) @ (H, R) -&gt; (B, S, R)</span>
+        <span class="n">down_project_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">*</span> <span class="n">rank</span>
+        <span class="n">down_project_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">rank</span>
+
+        <span class="c1"># Up projection: (B, S, R) @ (R, AH) -&gt; (B, S, AH)</span>
+        <span class="n">up_project_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="n">rank</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span>
+        <span class="n">up_project_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="p">(</span><span class="n">rank</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span>
+        
+        <span class="c1"># scaling coefficient</span>
+        <span class="n">scaling_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># Adding to original weights: (B, S, AH) + (B, S, AH) -&gt; (B, S, AH)</span>
+        <span class="n">addition_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_dim</span>
+
+        <span class="c1"># Total FLOPs</span>
+        <span class="n">total_flops</span> <span class="o">=</span> <span class="n">down_project_flops</span> <span class="o">+</span> <span class="n">up_project_flops</span> <span class="o">+</span> <span class="n">addition_flops</span> <span class="o">+</span> <span class="n">scaling_flops</span>
+
+        <span class="c1"># Format the breakdown string</span>
+        <span class="n">FLOPS_breakdown</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;LoRA FLOPs Breakdown:</span>
+<span class="s2">    Down Projection:       </span><span class="si">{</span><span class="n">down_project_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Projecting to low-rank dimension</span>
+<span class="s2">    Up Projection:         </span><span class="si">{</span><span class="n">up_project_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Projecting from low-rank to attention dimension</span>
+<span class="s2">    Scaling Coefficient:   </span><span class="si">{</span><span class="n">scaling_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Scaling coefficient for LoRA output</span>
+<span class="s2">    Addition to Output:    </span><span class="si">{</span><span class="n">addition_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Adding LoRA output to original output</span>
+<span class="s2">    ---</span>
+<span class="s2">    Total LoRA FLOPs:      </span><span class="si">{</span><span class="n">total_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+        <span class="c1"># Verify that the sum matches the total</span>
+        <span class="k">assert</span> <span class="n">total_flops</span> <span class="o">==</span> <span class="p">(</span><span class="n">down_project_flops</span> <span class="o">+</span> <span class="n">up_project_flops</span> <span class="o">+</span> <span class="n">addition_flops</span> <span class="o">+</span> <span class="n">scaling_flops</span><span class="p">),</span> <span class="s2">&quot;LoRA FLOPs calculation mismatch&quot;</span>
+
+        <span class="k">return</span> <span class="n">total_flops</span><span class="p">,</span> <span class="n">FLOPS_breakdown</span></div>
+
+    
+<div class="viewcode-block" id="QwenFlopsCalculator.get_LM_head">
+<a class="viewcode-back" href="../index.html#get_flops.QwenFlopsCalculator.get_LM_head">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_LM_head</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">inference</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate FLOPs for the final Language Model head, where we project the hidden states to the vocabulary size.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            batch_size: Number of samples in a batch</span>
+<span class="sd">            seq_len: Sequence length (number of tokens)</span>
+<span class="sd">            verbose: Whether to print detailed breakdown</span>
+<span class="sd">            inference: Whether this is for inference (affects calculation)</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (total_flops, breakdown_string)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Input validation</span>
+        <span class="k">assert</span> <span class="n">batch_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Batch size must be positive, got </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">seq_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Sequence length must be positive, got </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">&quot;</span>
+        
+        <span class="c1"># Project hidden states to vocabulary size</span>
+        <span class="c1"># (B, S, H) @ (H, V) -&gt; (B, S, V)</span>
+        <span class="n">LM_head_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">*</span> <span class="n">seq_len</span>
+        <span class="n">LM_head_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">*</span> <span class="n">seq_len</span>
+        <span class="n">LM_head_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">*</span> <span class="n">seq_len</span>
+
+        <span class="c1"># Format the breakdown string</span>
+        <span class="n">FLOPS_breakdown</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;LM Head FLOPs Breakdown:</span>
+<span class="s2">    LM Head Projection:    </span><span class="si">{</span><span class="n">LM_head_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Projecting hidden states to vocabulary size</span>
+<span class="s2">    ---</span>
+<span class="s2">    Total LM Head FLOPs:   </span><span class="si">{</span><span class="n">LM_head_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">LM_head_flops</span><span class="p">,</span> <span class="n">FLOPS_breakdown</span></div>
+
+    
+<div class="viewcode-block" id="QwenFlopsCalculator.get_loss_flops">
+<a class="viewcode-back" href="../index.html#get_flops.QwenFlopsCalculator.get_loss_flops">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_loss_flops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate FLOPs for the training loss</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            batch_size: Number of samples in a batch</span>
+<span class="sd">            seq_len: Sequence length (number of tokens)</span>
+<span class="sd">            verbose: Whether to print detailed breakdown</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (total_flops, breakdown_string)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Softmax_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_EXP</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">*</span> <span class="n">seq_len</span>  <span class="c1"># exp for each element</span>
+        <span class="n">Softmax_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">*</span> <span class="n">seq_len</span>  <span class="c1"># sum for denominator</span>
+        <span class="n">Softmax_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_DIV</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">*</span> <span class="n">seq_len</span>  <span class="c1"># division for normalization</span>
+
+        <span class="c1"># Log and multiply by true label</span>
+        <span class="n">log_and_time_flops</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_LOG</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_MUL</span><span class="p">)</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span>
+
+        <span class="n">FLOPS_breakdown</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Loss FLOPs Breakdown:</span>
+<span class="s2">    Softmax:               </span><span class="si">{</span><span class="n">Softmax_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Computing softmax for loss calculation</span>
+<span class="s2">    Log and Time:          </span><span class="si">{</span><span class="n">log_and_time_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Computing log and multiply by true label</span>
+<span class="s2">    ---</span>
+<span class="s2">    Total Loss FLOPs:      </span><span class="si">{</span><span class="n">Softmax_flops</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">log_and_time_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+        
+        <span class="k">return</span> <span class="n">Softmax_flops</span> <span class="o">+</span> <span class="n">log_and_time_flops</span><span class="p">,</span> <span class="n">FLOPS_breakdown</span></div>
+
+
+<div class="viewcode-block" id="QwenFlopsCalculator.get_residual_flops">
+<a class="viewcode-back" href="../index.html#get_flops.QwenFlopsCalculator.get_residual_flops">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_residual_flops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate FLOPs for residual connections.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            batch_size: Number of samples in a batch</span>
+<span class="sd">            seq_len: Sequence length (number of tokens)</span>
+<span class="sd">            verbose: Whether to print detailed breakdown</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (total_flops, breakdown_string)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Input validation</span>
+        <span class="k">assert</span> <span class="n">batch_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Batch size must be positive, got </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">seq_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Sequence length must be positive, got </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">&quot;</span>
+        
+        <span class="c1"># Residual addition: (B, S, H) + (B, S, H) -&gt; (B, S, H)</span>
+        <span class="n">residual_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opFLops</span><span class="o">.</span><span class="n">_ADD</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span>
+
+        <span class="c1"># Format the breakdown string</span>
+        <span class="n">FLOPS_breakdown</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Residual FLOPs Breakdown:</span>
+<span class="s2">    Residual Addition:     </span><span class="si">{</span><span class="n">residual_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs - Adding residual connection to layer output</span>
+<span class="s2">    ---</span>
+<span class="s2">    Total Residual FLOPs:  </span><span class="si">{</span><span class="n">residual_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">residual_flops</span><span class="p">,</span> <span class="n">FLOPS_breakdown</span></div>
+
+
+<div class="viewcode-block" id="QwenFlopsCalculator.get_flops">
+<a class="viewcode-back" href="../index.html#get_flops.QwenFlopsCalculator.get_flops">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_flops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">inference</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate total FLOPs for the QWEN 2.5 model including forward and backward passes.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            batch_size: Number of samples in a batch</span>
+<span class="sd">            seq_len: Sequence length (number of tokens)</span>
+<span class="sd">            rank: The rank of the LoRA adaptation</span>
+<span class="sd">            verbose: Whether to print detailed breakdown</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Total FLOPs for model training</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Input validation</span>
+        <span class="k">assert</span> <span class="n">batch_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Batch size must be positive, got </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">seq_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Sequence length must be positive, got </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">rank</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;LoRA rank must be positive, got </span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># Calculate FLOPs for each component</span>
+        <span class="n">attention_flops</span><span class="p">,</span> <span class="n">atten_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_attention_flops</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+        <span class="n">rmsnorm_flops</span><span class="p">,</span> <span class="n">rmsnorm_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_RMSNorm_flops</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+        <span class="n">ffn_flops</span><span class="p">,</span> <span class="n">ffn_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ffn_flops</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+        <span class="n">lora_flops</span><span class="p">,</span> <span class="n">lora_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_lora_flops</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+        <span class="n">residual_flops</span><span class="p">,</span> <span class="n">residual_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_residual_flops</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+        <span class="n">logits_flops</span><span class="p">,</span> <span class="n">logits_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_LM_head</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">inference</span><span class="p">)</span>
+        <span class="n">loss_flops</span><span class="p">,</span> <span class="n">loss_breakdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_loss_flops</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+        <span class="c1"># FLOPs for one decoder layer</span>
+        <span class="n">layer_flops</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">rmsnorm_flops</span> <span class="o">+</span>           <span class="c1"># Two RMSNorm operations per layer</span>
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">residual_flops</span> <span class="o">+</span>          <span class="c1"># Two residual connections per layer</span>
+            <span class="n">attention_flops</span> <span class="o">+</span>             <span class="c1"># One multi-head attention block</span>
+            <span class="n">ffn_flops</span>                    <span class="c1"># One feed-forward network</span>
+        <span class="p">)</span>
+
+
+        
+        <span class="c1"># Total forward pass FLOPs for the entire model</span>
+        <span class="n">forward_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">*</span> <span class="n">layer_flops</span> <span class="o">+</span> <span class="n">logits_flops</span>
+        
+        <span class="c1"># Backward pass typically costs about 2x the forward pass</span>
+        <span class="k">if</span> <span class="n">inference</span><span class="p">:</span>
+            <span class="n">backward_flops</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">backward_flops</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">forward_flops</span> <span class="o">+</span> <span class="n">loss_flops</span> <span class="o">*</span> <span class="mi">3</span>
+            <span class="c1"># number of heads * q and k  (2) * lora flops * [forward (1) + backward (2)]</span>
+            <span class="n">backward_flops</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">lora_flops</span> <span class="o">*</span> <span class="mi">3</span> <span class="c1">#</span>
+
+        <span class="c1"># Total training FLOPs (forward + backward)</span>
+        <span class="n">training_flops</span> <span class="o">=</span> <span class="n">forward_flops</span> <span class="o">+</span> <span class="n">backward_flops</span>
+
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="c1"># Prepare detailed breakdown for output</span>
+            <span class="n">FLOPS_breakdown</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">=== QWEN 2.5 FLOPs Calculation ===</span>
+
+<span class="s2">==== Component Breakdown ====</span>
+<span class="si">{</span><span class="n">atten_breakdown</span><span class="si">}</span>
+<span class="si">{</span><span class="n">rmsnorm_breakdown</span><span class="si">}</span>
+<span class="si">{</span><span class="n">ffn_breakdown</span><span class="si">}</span>
+<span class="si">{</span><span class="n">lora_breakdown</span><span class="si">}</span>
+<span class="si">{</span><span class="n">residual_breakdown</span><span class="si">}</span>
+
+<span class="s2">==== Decoder Layer Breakdown ====</span>
+<span class="s2">FLOPs per Decoder Layer:</span>
+<span class="s2">    2 × RMSNorm:           </span><span class="si">{</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">rmsnorm_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs</span>
+<span class="s2">    2 × Residual:          </span><span class="si">{</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">residual_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs</span>
+<span class="s2">    1 × Attention:         </span><span class="si">{</span><span class="n">attention_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs</span>
+<span class="s2">    1 × FFN:               </span><span class="si">{</span><span class="n">ffn_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs</span>
+<span class="s2">    </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2"> × LoRA:              </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">lora_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs (LoRA for Q and K in each head, and only present when training, not in inference)</span>
+<span class="s2">    To Logits:             </span><span class="si">{</span><span class="n">logits_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs</span>
+<span class="s2">    ---</span>
+<span class="s2">    Total per Layer:       </span><span class="si">{</span><span class="n">layer_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs</span>
+
+<span class="s2">==== Full Model FLOPs ====</span>
+<span class="s2">Forward Pass (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="si">}</span><span class="s2"> layers):        </span><span class="si">{</span><span class="n">forward_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs</span>
+<span class="s2">Backward Pass (≈2× forward): </span><span class="si">{</span><span class="n">backward_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs</span>
+<span class="s2">---</span>
+<span class="s2">Total Training FLOPs:      </span><span class="si">{</span><span class="n">training_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs</span>
+<span class="s2">&quot;&quot;&quot;</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">FLOPS_breakdown</span><span class="p">)</span>
+
+        <span class="c1"># Run validation to ensure calculations are consistent</span>
+        <span class="k">assert</span> <span class="n">layer_flops</span> <span class="o">==</span> <span class="p">(</span>
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">rmsnorm_flops</span> <span class="o">+</span> 
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">residual_flops</span> <span class="o">+</span> 
+            <span class="n">attention_flops</span> <span class="o">+</span> 
+            <span class="n">ffn_flops</span> 
+        <span class="p">),</span> <span class="s2">&quot;Layer FLOPs calculation mismatch&quot;</span>
+        
+        <span class="k">assert</span> <span class="n">forward_flops</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">*</span> <span class="n">layer_flops</span> <span class="o">+</span> <span class="n">logits_flops</span><span class="p">,</span> <span class="s2">&quot;Forward FLOPs calculation mismatch&quot;</span>
+        <span class="k">assert</span> <span class="n">training_flops</span> <span class="o">==</span> <span class="n">forward_flops</span> <span class="o">+</span> <span class="n">backward_flops</span><span class="p">,</span> <span class="s2">&quot;Training FLOPs calculation mismatch&quot;</span>
+
+        <span class="k">return</span> <span class="n">training_flops</span></div>
+
+    
+<div class="viewcode-block" id="QwenFlopsCalculator.log_flops">
+<a class="viewcode-back" href="../index.html#get_flops.QwenFlopsCalculator.log_flops">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_flops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">inference</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Log FLOPs for the QWEN 2.5 model including forward and backward passes.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            batch_size: Number of samples in a batch</span>
+<span class="sd">            seq_len: Sequence length (number of tokens)</span>
+<span class="sd">            rank: The rank of the LoRA adaptation</span>
+<span class="sd">            verbose: Whether to print detailed breakdown</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Total FLOPs for model training</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">get_flops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_flops</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">inference</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">log_name</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">get_flops</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">timestamp</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">())</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="s1">&#39;inference&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">inference</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;training&#39;</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">description</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span></div>
+</div>
+
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Calculate FLOPs of QWEN 2.5 Decoder Layer&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--batch_size&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Batch size&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--seq_len&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Sequence length&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--rank&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Rank of LoRA&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--verbose&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Print FLOPs breakdown&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_flops&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1e17</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum FLOPs for comparison (default: 1e17 for H100)&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">qwen_flops_calculator</span> <span class="o">=</span> <span class="n">QwenFlopsCalculator</span><span class="p">()</span>
+    <span class="n">total_flops</span> <span class="o">=</span> <span class="n">qwen_flops_calculator</span><span class="o">.</span><span class="n">get_flops</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">seq_len</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
+    
+    <span class="c1"># # Print formatted results</span>
+    <span class="c1"># for formatted_str in format_flops(total_flops):</span>
+    <span class="c1">#     print(formatted_str)</span>
+    
+    <span class="c1"># # Print comparison to maximum FLOPs</span>
+    <span class="c1"># print(f&quot;Total FLOPs: {total_flops/args.max_flops:.6%} of {args.max_flops:.1e} FLOPs (max capacity)&quot;)</span>
+    <span class="c1"># print(f&quot;Efficiency Ratio: {1 / (total_flops/args.max_flops):.1f}x faster than maximum capacity&quot;)</span>
+
+    <span class="c1"># # Example command:</span>
+    <span class="c1"># python get_flops.py --batch_size 4 --seq_len 512 --rank 8 --verbose</span>
+
+    <span class="k">for</span> <span class="n">context_len</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">768</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">rank</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">):</span>
+            <span class="n">total_flops</span> <span class="o">=</span> <span class="n">qwen_flops_calculator</span><span class="o">.</span><span class="n">get_flops</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">context_len</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Total FLOPs for context_len=</span><span class="si">{</span><span class="n">context_len</span><span class="si">}</span><span class="s2">, rank=</span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">total_flops</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> FLOPs, we can afford </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">max_flops</span><span class="o">/</span><span class="n">total_flops</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> optimizer steps&quot;</span>
+            <span class="p">)</span>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Yuchen Mao.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

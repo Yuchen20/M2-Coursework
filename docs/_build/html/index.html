@@ -1,0 +1,961 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time Series Forecasting with Qwen2.5-0.5B LLM &mdash; Time Series Forecasting with LLMs beta documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=a6e103b4" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=f0d2c090"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Lotka-Volterra Dataset Exploration &amp; LLMTIME Preprocessing" href="notebooks/1_dataset_preprocess.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            Time Series Forecasting with LLMs
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Jupyter Notebooks</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/1_dataset_preprocess.html">Lotka-Volterra Dataset Exploration &amp; LLMTIME Preprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/2_flops_calculation.html">Understanding FLOPS Calculation for Qwen2.5 Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/3_untrained_behaviour.html">Evaluating Untrained LLM Performance on Time Series Forecasting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/4_train_lora_llm.html">Train LoRA-LLM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/5_initial_train_behaviour.html">Evaluating Trained LLM Performance on Time Series Forecasting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/6_fully_trained_behaviour.html">Evaluating Fully Trained LLM Performance on Time Series Forecasting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/6_fully_trained_behaviour.html#Flops-Analysis">Flops Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/7_weight_visualize.html">LM Bias Weight Visualization</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Time Series Forecasting with LLMs</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Time Series Forecasting with Qwen2.5-0.5B LLM</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="time-series-forecasting-with-qwen2-5-0-5b-llm">
+<h1>Time Series Forecasting with Qwen2.5-0.5B LLM<a class="headerlink" href="#time-series-forecasting-with-qwen2-5-0-5b-llm" title="Link to this heading"></a></h1>
+<img alt="Python Version" src="https://img.shields.io/badge/Python-3.8%2B-blue" />
+<img alt="PyTorch Version" src="https://img.shields.io/badge/PyTorch-1.9%2B-orange" />
+<p>This project explores adapting a small, pre-trained large language model (LLM)—<strong>Qwen-2.5-0.5B-Instruct</strong>—for numerical time series forecasting. The task involves modeling predator-prey dynamics using the <strong>Lotka-Volterra equations</strong>, with all experiments conducted under a strict computational budget of <strong>1e17 FLOPs</strong>.</p>
+<p>Key techniques:</p>
+<ul class="simple">
+<li><p><strong>LLMTime Preprocessing</strong>: Efficiently encodes numeric sequences as tokens</p></li>
+<li><p><strong>LoRA (Low-Rank Adaptation)</strong>: Parameter-efficient fine-tuning under budget constraints</p></li>
+</ul>
+<p>The objective is to fine-tune the LLM for accurate short-term forecasts of time series behavior within a tight resource envelope.</p>
+<section id="project-structure">
+<h2>Project Structure<a class="headerlink" href="#project-structure" title="Link to this heading"></a></h2>
+<p>The project is organized as follows:</p>
+<ul class="simple">
+<li><p><strong>src/</strong>: Core modules and implementation</p></li>
+<li><p><strong>notebooks/</strong>: Jupyter notebooks for experiments and visualization</p></li>
+<li><p><strong>data/</strong>: Dataset files for Lotka-Volterra simulations</p></li>
+<li><p><strong>tests/</strong>: Test suite for project components</p></li>
+<li><p><strong>checkpoint/</strong>: Saved model checkpoints</p></li>
+<li><p><strong>docs/</strong>: Documentation (you are here)</p></li>
+</ul>
+</section>
+<section id="installation-and-setup">
+<h2>Installation and Setup<a class="headerlink" href="#installation-and-setup" title="Link to this heading"></a></h2>
+<p>There are several ways to set up the environment for this project:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Option 1: Using requirements.txt</span>
+python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
+<span class="nb">source</span><span class="w"> </span>venv/bin/activate<span class="w">  </span><span class="c1"># Windows: venv\Scripts\activate</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+python<span class="w"> </span>-m<span class="w"> </span>ipykernel<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>--name<span class="o">=</span>m2-coursework-venv<span class="w"> </span>--display-name<span class="o">=</span><span class="s2">&quot;M2 Coursework (venv)&quot;</span>
+
+<span class="c1"># Option 2: Using Conda</span>
+conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>environment.yml
+conda<span class="w"> </span>activate<span class="w"> </span>m2-coursework
+python<span class="w"> </span>-m<span class="w"> </span>ipykernel<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>--name<span class="o">=</span>m2-coursework-conda<span class="w"> </span>--display-name<span class="o">=</span><span class="s2">&quot;M2 Coursework (conda)&quot;</span>
+
+<span class="c1"># Option 3: Using Docker</span>
+docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>m2-coursework<span class="w"> </span>.
+docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>-p<span class="w"> </span><span class="m">8888</span>:8888<span class="w"> </span>m2-coursework
+</pre></div>
+</div>
+</section>
+<section id="api-reference">
+<h2>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h2>
+<section id="module-preprocessor">
+<span id="preprocessor-module"></span><h3>Preprocessor Module<a class="headerlink" href="#module-preprocessor" title="Link to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="preprocessor.NumericalProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">preprocessor.</span></span><span class="sig-name descname"><span class="pre">NumericalProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PreTrainedTokenizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_magnitude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/preprocessor.html#NumericalProcessor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#preprocessor.NumericalProcessor" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A processor for converting between numerical arrays and tokenized strings.
+Used for representing predator-prey data as text for language model processing.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="preprocessor.NumericalProcessor.decode_to_string">
+<span class="sig-name descname"><span class="pre">decode_to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/preprocessor.html#NumericalProcessor.decode_to_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#preprocessor.NumericalProcessor.decode_to_string" title="Link to this definition"></a></dt>
+<dd><p>Decode token IDs to string representation (without parsing to values).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ids</strong> – Token IDs to decode</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Raw decoded string</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="preprocessor.NumericalProcessor.postprocess">
+<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/preprocessor.html#NumericalProcessor.postprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#preprocessor.NumericalProcessor.postprocess" title="Link to this definition"></a></dt>
+<dd><p>Convert model output tokens back to numerical values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>output</strong> – Token IDs from the model</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array of shape (N, 2) containing the descaled prey and predator values</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If the output format is invalid</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="preprocessor.NumericalProcessor.preprocess">
+<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prey</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/preprocessor.html#NumericalProcessor.preprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#preprocessor.NumericalProcessor.preprocess" title="Link to this definition"></a></dt>
+<dd><p>Convert prey and predator data to tokenized input for the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prey</strong> – Array of prey population values</p></li>
+<li><p><strong>predator</strong> – Array of predator population values</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary with tokenized inputs ready for model consumption</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-get_data">
+<span id="data-module"></span><h3>Data Module<a class="headerlink" href="#module-get_data" title="Link to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="get_data.DataMaster">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">get_data.</span></span><span class="sig-name descname"><span class="pre">DataMaster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trajectories</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/get_data.html#DataMaster"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_data.DataMaster" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="get_data.DataMaster.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">128</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_eval_pairs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/get_data.html#DataMaster.get_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_data.DataMaster.get_data" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="get_data.LotkaVolterraDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">get_data.</span></span><span class="sig-name descname"><span class="pre">LotkaVolterraDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_eval_pairs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/get_data.html#LotkaVolterraDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_data.LotkaVolterraDataset" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></p>
+<p>Dataset class for Lotka-Volterra time series data.</p>
+<p>This class handles preprocessing and serving time series data for training and inference
+of models on Lotka-Volterra dynamics.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>List</em><em>[</em><em>np.ndarray</em><em>]</em>) – List of time series arrays, each with shape [sequence_length, 2]</p></li>
+<li><p><strong>processor</strong> – Preprocessing object with a preprocess method</p></li>
+<li><p><strong>context_length</strong> (<em>int</em><em>, </em><em>optional</em>) – Length of context window. Defaults to 256.</p></li>
+<li><p><strong>inference</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to prepare data for inference. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If inputs don’t meet requirements</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-get_flops">
+<span id="flops-calculator"></span><h3>FLOPS Calculator<a class="headerlink" href="#module-get_flops" title="Link to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="get_flops.OperationFlops">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">get_flops.</span></span><span class="sig-name descname"><span class="pre">OperationFlops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_ADD</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_SUB</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_NEG</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_MUL</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_DIV</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_INV</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_RELU</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ABS</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_EXP</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_LOG</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_SIN</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_COS</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_SQRT</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/get_flops.html#OperationFlops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_flops.OperationFlops" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="simple">
+<dt>FLOPs for different operations:</dt><dd><p>Additions, Subtractions, Negations: 1
+Multiplications, Divisions, Inverses: 1
+ReLU, Absolute Value: 1
+Exponentiation, Logarithm: 10
+Sine, Cosine, Square Root: 10</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="get_flops.QwenFlopsCalculator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">get_flops.</span></span><span class="sig-name descname"><span class="pre">QwenFlopsCalculator</span></span><a class="reference internal" href="_modules/get_flops.html#QwenFlopsCalculator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_flops.QwenFlopsCalculator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Calculate FLOPs for the QWEN 2.5 model components.</p>
+<p>This class provides methods to calculate FLOPs for various components
+of the QWEN 2.5 architecture including attention, normalization,
+feed-forward networks, and LoRA adapters.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="get_flops.QwenFlopsCalculator.get_LM_head">
+<span class="sig-name descname"><span class="pre">get_LM_head</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/get_flops.html#QwenFlopsCalculator.get_LM_head"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_flops.QwenFlopsCalculator.get_LM_head" title="Link to this definition"></a></dt>
+<dd><p>Calculate FLOPs for the final Language Model head, where we project the hidden states to the vocabulary size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> – Number of samples in a batch</p></li>
+<li><p><strong>seq_len</strong> – Sequence length (number of tokens)</p></li>
+<li><p><strong>verbose</strong> – Whether to print detailed breakdown</p></li>
+<li><p><strong>inference</strong> – Whether this is for inference (affects calculation)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of (total_flops, breakdown_string)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="get_flops.QwenFlopsCalculator.get_RMSNorm_flops">
+<span class="sig-name descname"><span class="pre">get_RMSNorm_flops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/get_flops.html#QwenFlopsCalculator.get_RMSNorm_flops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_flops.QwenFlopsCalculator.get_RMSNorm_flops" title="Link to this definition"></a></dt>
+<dd><p>Calculate FLOPs for the RMSNorm operation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> – Number of samples in a batch</p></li>
+<li><p><strong>seq_len</strong> – Sequence length (number of tokens)</p></li>
+<li><p><strong>verbose</strong> – Whether to print detailed breakdown</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of (total_flops, breakdown_string)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="get_flops.QwenFlopsCalculator.get_attention_flops">
+<span class="sig-name descname"><span class="pre">get_attention_flops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/get_flops.html#QwenFlopsCalculator.get_attention_flops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_flops.QwenFlopsCalculator.get_attention_flops" title="Link to this definition"></a></dt>
+<dd><p>Calculate FLOPs for the attention mechanism.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> – Number of samples in a batch</p></li>
+<li><p><strong>seq_len</strong> – Sequence length (number of tokens)</p></li>
+<li><p><strong>verbose</strong> – Whether to print detailed breakdown</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of (total_flops, breakdown_string)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="get_flops.QwenFlopsCalculator.get_ffn_flops">
+<span class="sig-name descname"><span class="pre">get_ffn_flops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/get_flops.html#QwenFlopsCalculator.get_ffn_flops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_flops.QwenFlopsCalculator.get_ffn_flops" title="Link to this definition"></a></dt>
+<dd><p>Calculate FLOPs for the Feed-Forward Network.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> – Number of samples in a batch</p></li>
+<li><p><strong>seq_len</strong> – Sequence length (number of tokens)</p></li>
+<li><p><strong>verbose</strong> – Whether to print detailed breakdown</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of (total_flops, breakdown_string)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="get_flops.QwenFlopsCalculator.get_flops">
+<span class="sig-name descname"><span class="pre">get_flops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/get_flops.html#QwenFlopsCalculator.get_flops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_flops.QwenFlopsCalculator.get_flops" title="Link to this definition"></a></dt>
+<dd><p>Calculate total FLOPs for the QWEN 2.5 model including forward and backward passes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> – Number of samples in a batch</p></li>
+<li><p><strong>seq_len</strong> – Sequence length (number of tokens)</p></li>
+<li><p><strong>rank</strong> – The rank of the LoRA adaptation</p></li>
+<li><p><strong>verbose</strong> – Whether to print detailed breakdown</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Total FLOPs for model training</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="get_flops.QwenFlopsCalculator.get_lora_flops">
+<span class="sig-name descname"><span class="pre">get_lora_flops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/get_flops.html#QwenFlopsCalculator.get_lora_flops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_flops.QwenFlopsCalculator.get_lora_flops" title="Link to this definition"></a></dt>
+<dd><p>Calculate FLOPs for the LoRA adaptation.</p>
+<p>Note that LoRA flops only calculate the flops of the LoRA layer itself,
+not including the frozen linear layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> – Number of samples in a batch</p></li>
+<li><p><strong>seq_len</strong> – Sequence length (number of tokens)</p></li>
+<li><p><strong>rank</strong> – The rank of the LoRA adaptation</p></li>
+<li><p><strong>verbose</strong> – Whether to print detailed breakdown</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of (total_flops, breakdown_string)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="get_flops.QwenFlopsCalculator.get_loss_flops">
+<span class="sig-name descname"><span class="pre">get_loss_flops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/get_flops.html#QwenFlopsCalculator.get_loss_flops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_flops.QwenFlopsCalculator.get_loss_flops" title="Link to this definition"></a></dt>
+<dd><p>Calculate FLOPs for the training loss</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> – Number of samples in a batch</p></li>
+<li><p><strong>seq_len</strong> – Sequence length (number of tokens)</p></li>
+<li><p><strong>verbose</strong> – Whether to print detailed breakdown</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of (total_flops, breakdown_string)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="get_flops.QwenFlopsCalculator.get_residual_flops">
+<span class="sig-name descname"><span class="pre">get_residual_flops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/get_flops.html#QwenFlopsCalculator.get_residual_flops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_flops.QwenFlopsCalculator.get_residual_flops" title="Link to this definition"></a></dt>
+<dd><p>Calculate FLOPs for residual connections.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> – Number of samples in a batch</p></li>
+<li><p><strong>seq_len</strong> – Sequence length (number of tokens)</p></li>
+<li><p><strong>verbose</strong> – Whether to print detailed breakdown</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of (total_flops, breakdown_string)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="get_flops.QwenFlopsCalculator.log_flops">
+<span class="sig-name descname"><span class="pre">log_flops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/get_flops.html#QwenFlopsCalculator.log_flops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#get_flops.QwenFlopsCalculator.log_flops" title="Link to this definition"></a></dt>
+<dd><p>Log FLOPs for the QWEN 2.5 model including forward and backward passes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> – Number of samples in a batch</p></li>
+<li><p><strong>seq_len</strong> – Sequence length (number of tokens)</p></li>
+<li><p><strong>rank</strong> – The rank of the LoRA adaptation</p></li>
+<li><p><strong>verbose</strong> – Whether to print detailed breakdown</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Total FLOPs for model training</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-lora_weights">
+<span id="lora-weights-module"></span><h3>LoRA Weights Module<a class="headerlink" href="#module-lora_weights" title="Link to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="lora_weights.LoRALinear">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lora_weights.</span></span><span class="sig-name descname"><span class="pre">LoRALinear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_linear</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Linear</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#LoRALinear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.LoRALinear" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<p>LoRA implementation for linear layers.
+Adds low-rank adaptation matrices to an existing linear layer.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lora_weights.LoRALinear.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#LoRALinear.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.LoRALinear.forward" title="Link to this definition"></a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lora_weights.LoRALinear.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#LoRALinear.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.LoRALinear.merge" title="Link to this definition"></a></dt>
+<dd><p>Merge LoRA weights with the original weights for inference.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lora_weights.LoRALinear.unmerge">
+<span class="sig-name descname"><span class="pre">unmerge</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#LoRALinear.unmerge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.LoRALinear.unmerge" title="Link to this definition"></a></dt>
+<dd><p>Unmerge the weights, returning to explicit LoRA computation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lora_weights.apply_lora">
+<span class="sig-prename descclassname"><span class="pre">lora_weights.</span></span><span class="sig-name descname"><span class="pre">apply_lora</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lora_rank</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#apply_lora"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.apply_lora" title="Link to this definition"></a></dt>
+<dd><p>Apply LoRA to specific layers in the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The Qwen model to apply LoRA to</p></li>
+<li><p><strong>lora_rank</strong> (<em>int</em>) – Rank for the low-rank adaptation matrices</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The model with LoRA applied</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lora_weights.clear_gpu_memory">
+<span class="sig-prename descclassname"><span class="pre">lora_weights.</span></span><span class="sig-name descname"><span class="pre">clear_gpu_memory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#clear_gpu_memory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.clear_gpu_memory" title="Link to this definition"></a></dt>
+<dd><p>Clear GPU memory to free up resources.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lora_weights.count_trainable_parameters">
+<span class="sig-prename descclassname"><span class="pre">lora_weights.</span></span><span class="sig-name descname"><span class="pre">count_trainable_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#count_trainable_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.count_trainable_parameters" title="Link to this definition"></a></dt>
+<dd><p>Count the number of trainable parameters in the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> – The model to analyze</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of trainable parameters</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lora_weights.load_checkpoint">
+<span class="sig-prename descclassname"><span class="pre">lora_weights.</span></span><span class="sig-name descname"><span class="pre">load_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#load_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.load_checkpoint" title="Link to this definition"></a></dt>
+<dd><p>Load a model checkpoint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The model to load the checkpoint into</p></li>
+<li><p><strong>checkpoint_path</strong> (<em>str</em>) – Path to the checkpoint file</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The model with loaded weights</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lora_weights.load_qwen">
+<span class="sig-prename descclassname"><span class="pre">lora_weights.</span></span><span class="sig-name descname"><span class="pre">load_qwen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Qwen/Qwen2.5-0.5B-Instruct'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#load_qwen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.load_qwen" title="Link to this definition"></a></dt>
+<dd><p>Load the Qwen model and tokenizer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model_name</strong> (<em>str</em>) – Name of the Hugging Face model to load.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(model, tokenizer)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lora_weights.merge_lora_weights">
+<span class="sig-prename descclassname"><span class="pre">lora_weights.</span></span><span class="sig-name descname"><span class="pre">merge_lora_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#merge_lora_weights"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.merge_lora_weights" title="Link to this definition"></a></dt>
+<dd><p>Merge all LoRA weights in the model for faster inference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> – The model with LoRA layers</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The model with merged weights</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lora_weights.setup_lora_model">
+<span class="sig-prename descclassname"><span class="pre">lora_weights.</span></span><span class="sig-name descname"><span class="pre">setup_lora_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lora_rank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Qwen/Qwen2.5-0.5B-Instruct'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#setup_lora_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.setup_lora_model" title="Link to this definition"></a></dt>
+<dd><p>Setup a Qwen model with LoRA and optionally load weights from a checkpoint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lora_rank</strong> (<em>int</em>) – Rank for the LoRA adaptation</p></li>
+<li><p><strong>checkpoint_path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path to a checkpoint file</p></li>
+<li><p><strong>model_name</strong> (<em>str</em>) – Name of the Hugging Face model to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(model, tokenizer)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lora_weights.unmerge_lora_weights">
+<span class="sig-prename descclassname"><span class="pre">lora_weights.</span></span><span class="sig-name descname"><span class="pre">unmerge_lora_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lora_weights.html#unmerge_lora_weights"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lora_weights.unmerge_lora_weights" title="Link to this definition"></a></dt>
+<dd><p>Unmerge all LoRA weights in the model for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> – The model with merged LoRA layers</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The model with unmerged weights</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>model</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-Trainer">
+<span id="trainer-module"></span><h3>Trainer Module<a class="headerlink" href="#module-Trainer" title="Link to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Trainer.</span></span><span class="sig-name descname"><span class="pre">LoRATrainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lora_rank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_decay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'checkpoints'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'M2-Course-Work'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_eval_pairs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_flops_budget_percent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Trainer class for fine-tuning a Qwen model with LoRA.
+Includes wandb logging, FLOPs tracking, LoRA weight management, and comprehensive metric tracking.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.decode_to_string">
+<span class="sig-name descname"><span class="pre">decode_to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.decode_to_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.decode_to_string" title="Link to this definition"></a></dt>
+<dd><p>Decode token IDs to string representation (similar to processor.decode_to_string).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ids</strong> – Token IDs to decode</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Raw decoded string</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quick_eval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.evaluate" title="Link to this definition"></a></dt>
+<dd><p>Evaluate the model on the validation set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>quick_eval</strong> – If True, only calculate loss without generation (faster)
+If False, perform full evaluation with generation and metrics</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.evaluation_loop">
+<span class="sig-name descname"><span class="pre">evaluation_loop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataloader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_loss_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_key_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eval'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.evaluation_loop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.evaluation_loop" title="Link to this definition"></a></dt>
+<dd><p>Evaluation loop for time series metrics using batched inference with semicolon tracking.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.is_world_process_zero">
+<span class="sig-name descname"><span class="pre">is_world_process_zero</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.is_world_process_zero"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.is_world_process_zero" title="Link to this definition"></a></dt>
+<dd><p>Helper method to check if this is the main process.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.load_checkpoint">
+<span class="sig-name descname"><span class="pre">load_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.load_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.load_checkpoint" title="Link to this definition"></a></dt>
+<dd><p>Load a model checkpoint.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.log_flops_to_wandb">
+<span class="sig-name descname"><span class="pre">log_flops_to_wandb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">final</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.log_flops_to_wandb"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.log_flops_to_wandb" title="Link to this definition"></a></dt>
+<dd><p>Log FLOPS usage to wandb with detailed breakdown.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.log_gradient_stats">
+<span class="sig-name descname"><span class="pre">log_gradient_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.log_gradient_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.log_gradient_stats" title="Link to this definition"></a></dt>
+<dd><p>Log gradient statistics for trainable parameters to wandb.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.merge_lora_weights">
+<span class="sig-name descname"><span class="pre">merge_lora_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.merge_lora_weights"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.merge_lora_weights" title="Link to this definition"></a></dt>
+<dd><p>Merge LoRA weights into base weights for inference.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.save_checkpoint">
+<span class="sig-name descname"><span class="pre">save_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.save_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.save_checkpoint" title="Link to this definition"></a></dt>
+<dd><p>Save model checkpoint.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.test">
+<span class="sig-name descname"><span class="pre">test</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.test" title="Link to this definition"></a></dt>
+<dd><p>Evaluate the model on the test set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.train"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.train" title="Link to this definition"></a></dt>
+<dd><p>Main training loop.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.train_step">
+<span class="sig-name descname"><span class="pre">train_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.train_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.train_step" title="Link to this definition"></a></dt>
+<dd><p>Perform a single training step.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Trainer.LoRATrainer.unmerge_lora_weights">
+<span class="sig-name descname"><span class="pre">unmerge_lora_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Trainer.html#LoRATrainer.unmerge_lora_weights"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Trainer.LoRATrainer.unmerge_lora_weights" title="Link to this definition"></a></dt>
+<dd><p>Restore base weights after inference.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-experiment_initial">
+<span id="experiments"></span><h3>Experiments<a class="headerlink" href="#module-experiment_initial" title="Link to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="experiment_initial.LoRALinear">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">experiment_initial.</span></span><span class="sig-name descname"><span class="pre">LoRALinear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_linear</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Linear</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_initial.html#LoRALinear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_initial.LoRALinear" title="Link to this definition"></a></dt>
+<dd><p>LoRA implementation for linear layers.
+Adds low-rank adaptation matrices to an existing linear layer.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="experiment_initial.LoRALinear.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_initial.html#LoRALinear.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_initial.LoRALinear.forward" title="Link to this definition"></a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="experiment_initial.LoRALinear.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_initial.html#LoRALinear.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_initial.LoRALinear.merge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="experiment_initial.LoRALinear.unmerge">
+<span class="sig-name descname"><span class="pre">unmerge</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_initial.html#LoRALinear.unmerge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_initial.LoRALinear.unmerge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="experiment_initial.apply_lora">
+<span class="sig-prename descclassname"><span class="pre">experiment_initial.</span></span><span class="sig-name descname"><span class="pre">apply_lora</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lora_rank</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_initial.html#apply_lora"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_initial.apply_lora" title="Link to this definition"></a></dt>
+<dd><p>Apply LoRA to specific layers in the model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="experiment_initial.load_qwen">
+<span class="sig-prename descclassname"><span class="pre">experiment_initial.</span></span><span class="sig-name descname"><span class="pre">load_qwen</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_initial.html#load_qwen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_initial.load_qwen" title="Link to this definition"></a></dt>
+<dd><p>Load and prepare the Qwen model for fine-tuning.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="experiment_initial.train_model">
+<span class="sig-prename descclassname"><span class="pre">experiment_initial.</span></span><span class="sig-name descname"><span class="pre">train_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_initial.html#train_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_initial.train_model" title="Link to this definition"></a></dt>
+<dd><p>Training function for wandb sweep or individual run.</p>
+</dd></dl>
+
+<dl class="py class" id="module-experiment_final">
+<dt class="sig sig-object py" id="experiment_final.LoRALinear">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">experiment_final.</span></span><span class="sig-name descname"><span class="pre">LoRALinear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_linear</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Linear</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_final.html#LoRALinear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_final.LoRALinear" title="Link to this definition"></a></dt>
+<dd><p>LoRA implementation for linear layers.
+Adds low-rank adaptation matrices to an existing linear layer.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="experiment_final.LoRALinear.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_final.html#LoRALinear.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_final.LoRALinear.forward" title="Link to this definition"></a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="experiment_final.LoRALinear.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_final.html#LoRALinear.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_final.LoRALinear.merge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="experiment_final.LoRALinear.unmerge">
+<span class="sig-name descname"><span class="pre">unmerge</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_final.html#LoRALinear.unmerge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_final.LoRALinear.unmerge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="experiment_final.apply_lora">
+<span class="sig-prename descclassname"><span class="pre">experiment_final.</span></span><span class="sig-name descname"><span class="pre">apply_lora</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lora_rank</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_final.html#apply_lora"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_final.apply_lora" title="Link to this definition"></a></dt>
+<dd><p>Apply LoRA to specific layers in the model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="experiment_final.load_qwen">
+<span class="sig-prename descclassname"><span class="pre">experiment_final.</span></span><span class="sig-name descname"><span class="pre">load_qwen</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_final.html#load_qwen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_final.load_qwen" title="Link to this definition"></a></dt>
+<dd><p>Load and prepare the Qwen model for fine-tuning.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="experiment_final.train_model">
+<span class="sig-prename descclassname"><span class="pre">experiment_final.</span></span><span class="sig-name descname"><span class="pre">train_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/experiment_final.html#train_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#experiment_final.train_model" title="Link to this definition"></a></dt>
+<dd><p>Training function for wandb sweep or individual run.</p>
+</dd></dl>
+
+</section>
+</section>
+<section id="notebooks">
+<span id="module-sweep_context_length"></span><span id="module-sweep"></span><h2>Notebooks<a class="headerlink" href="#notebooks" title="Link to this heading"></a></h2>
+<p>The following notebooks document the experimental process from data preparation to final evaluation:</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Jupyter Notebooks</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/1_dataset_preprocess.html">Lotka-Volterra Dataset Exploration &amp; LLMTIME Preprocessing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/1_dataset_preprocess.html#Dataset-Overview">Dataset Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/1_dataset_preprocess.html#Interactive-Visualization-of-Predator-Prey-Dynamics">Interactive Visualization of Predator-Prey Dynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/1_dataset_preprocess.html#LLMTIME-Preprocessing-Scheme-Implementation">LLMTIME Preprocessing Scheme Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/1_dataset_preprocess.html#Complete-Preprocessing-Pipeline-with-NumericalProcessor">Complete Preprocessing Pipeline with NumericalProcessor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/1_dataset_preprocess.html#Round-Trip-Testing:-Tokenize-→-Detokenize">Round-Trip Testing: Tokenize → Detokenize</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/1_dataset_preprocess.html#Conclusion">Conclusion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/1_dataset_preprocess.html#Appendix:-Additional-Samples">Appendix: Additional Samples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/2_flops_calculation.html">Understanding FLOPS Calculation for Qwen2.5 Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#Key-Components">Key Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#Defining-Operation-Costs">Defining Operation Costs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#Model-Architecture-Parameters">Model Architecture Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#1.-Multi-head-Attention-FLOPS">1. Multi-head Attention FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#2.-RMSNorm-FLOPS">2. RMSNorm FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#3.-Feed-Forward-Network-FLOPS">3. Feed-Forward Network FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#4.-LoRA-Adaptation-FLOPS">4. LoRA Adaptation FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#5.-Language-Model-Head-FLOPS">5. Language Model Head FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#6.-Loss-Calculation-FLOPS">6. Loss Calculation FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#7.-Residual-Connection-FLOPS">7. Residual Connection FLOPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#Full-Model-FLOPS-Breakdown">Full Model FLOPS Breakdown</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#FLOPS-Scaling-with-Different-Parameters">FLOPS Scaling with Different Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#Budget-Planning-Analysis">Budget Planning Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/2_flops_calculation.html#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/3_untrained_behaviour.html">Evaluating Untrained LLM Performance on Time Series Forecasting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/3_untrained_behaviour.html#Introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/3_untrained_behaviour.html#Data-Preparation">Data Preparation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/3_untrained_behaviour.html#Zero-Shot-Forecasting-Evaluation">Zero-Shot Forecasting Evaluation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/3_untrained_behaviour.html#Results-Analysis">Results Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/3_untrained_behaviour.html#Potential-Catastrophic-Forgetting">Potential Catastrophic Forgetting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/3_untrained_behaviour.html#Tokenization-Padding-Methods">Tokenization Padding Methods</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/4_train_lora_llm.html">Train LoRA-LLM</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/4_train_lora_llm.html#Improved-LoRA-Training">Improved LoRA Training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/4_train_lora_llm.html#Training-the-Model">Training the Model</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/5_initial_train_behaviour.html">Evaluating Trained LLM Performance on Time Series Forecasting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/5_initial_train_behaviour.html#Data-Preparation">Data Preparation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/5_initial_train_behaviour.html#Zero-Shot-Forecasting-Evaluation">Zero-Shot Forecasting Evaluation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/5_initial_train_behaviour.html#Results-Analysis">Results Analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/6_fully_trained_behaviour.html">Evaluating Fully Trained LLM Performance on Time Series Forecasting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/6_fully_trained_behaviour.html#Data-Preparation">Data Preparation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/6_fully_trained_behaviour.html#Zero-Shot-Forecasting-Evaluation">Zero-Shot Forecasting Evaluation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/6_fully_trained_behaviour.html#Flops-Analysis">Flops Analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/6_fully_trained_behaviour.html#Results-Analysis">Results Analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/7_weight_visualize.html">LM Bias Weight Visualization</a></li>
+</ul>
+</div>
+</section>
+<section id="experiment-pipeline">
+<h2>Experiment Pipeline<a class="headerlink" href="#experiment-pipeline" title="Link to this heading"></a></h2>
+<p>All experiments were designed to stay within the FLOPS budget:</p>
+<ol class="arabic simple">
+<li><p><strong>Baseline (Zero-Shot)</strong>
+Evaluated the untrained <cite>Qwen-0.5B-Instruct</cite> on the task.</p></li>
+<li><p><strong>Initial Training</strong>
+Fine-tuned the model using LoRA (Rank=4, LR=1e-4, Context=512) for 1000 steps to test feasibility.</p></li>
+<li><p><strong>Hyperparameter Search</strong>
+- Grid search over <strong>Learning Rate (η)</strong> and <strong>LoRA Rank (r)</strong> using short 500-step runs.
+- Evaluated different <strong>Context Lengths (S)</strong> using best LR and Rank settings.</p></li>
+<li><p><strong>Final Training</strong>
+Trained for ~3000 steps with optimal settings: <strong>LR=1e-4, Rank=8, Context=768</strong>.</p></li>
+</ol>
+</section>
+<section id="results-and-findings">
+<h2>Results and Findings<a class="headerlink" href="#results-and-findings" title="Link to this heading"></a></h2>
+<p>The model was evaluated on <strong>5-step ahead forecasting</strong>, using <strong>Mean Squared Error (MSE)</strong> and <strong>Mean Absolute Error (MAE)</strong>. Below is a comparison across training stages and context lengths:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Context</p></th>
+<th class="head"><p>Untrained MSE</p></th>
+<th class="head"><p>Untrained MAE</p></th>
+<th class="head"><p>Initial MSE</p></th>
+<th class="head"><p>Initial MAE</p></th>
+<th class="head"><p>Final MSE</p></th>
+<th class="head"><p>Final MAE</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>128</p></td>
+<td><p>0.5510</p></td>
+<td><p>0.3427</p></td>
+<td><p>0.1356</p></td>
+<td><p>0.1746</p></td>
+<td><p><strong>0.0263</strong></p></td>
+<td><p><strong>0.0726</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>512</p></td>
+<td><p>0.1048</p></td>
+<td><p>0.1509</p></td>
+<td><p>0.0362</p></td>
+<td><p>0.0834</p></td>
+<td><p><strong>0.0028</strong></p></td>
+<td><p><strong>0.0240</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>768</p></td>
+<td><p>0.0700</p></td>
+<td><p>0.1167</p></td>
+<td><p>0.0297</p></td>
+<td><p>0.0651</p></td>
+<td><p><strong>0.0020</strong></p></td>
+<td><p><strong>0.0191</strong></p></td>
+</tr>
+</tbody>
+</table>
+<p>The final model (S=768) reaches near the theoretical floor of representational error (~0.002 MAE), validating the effectiveness of training.</p>
+</section>
+<section id="indices-and-tables">
+<h2>Indices and Tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="notebooks/1_dataset_preprocess.html" class="btn btn-neutral float-right" title="Lotka-Volterra Dataset Exploration &amp; LLMTIME Preprocessing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Yuchen Mao.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
