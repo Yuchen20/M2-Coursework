@@ -1,0 +1,146 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{course_work}[2024/10/27 Yuchen Mao's Coursework Package]
+% Author: Yuchen Mao (ym429)
+% Based on Timmy Chan's resume package and Yuchen Mao's coursework template
+
+% --- Font and Basic Setup ---
+
+\RequirePackage[T1]{fontenc} %  Font encoding.  Good practice.
+% \RequirePackage[default,semibold]{sourcesanspro} % Sans-serif font.  Replace if you don't have this.
+% \RequirePackage[10pt]{moresize}  % Allows for more font sizes.
+\RequirePackage{anyfontsize}    % Even *more* font size flexibility.
+\RequirePackage{csquotes}       % For proper quotation marks (not strictly necessary here, but good).
+\RequirePackage{subcaption}
+
+% --- Geometry and Alignment ---
+
+\RequirePackage[margin=1.2in, top=1.2in, bottom=1in]{geometry} % Set Margins
+% \raggedright % Left align, no hyphenation at line breaks.  Good for readability.
+\raggedbottom % Top align, no extra space at the bottom of pages.
+
+% --- Colors ---
+
+\RequirePackage{xcolor}
+\definecolor{highlight}{RGB}{61, 90, 128} %  Your highlight color.
+\definecolor{LightGray}{gray}{0.9}         % For minted background (if used)
+
+% --- Hyperlinks ---
+
+\RequirePackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    urlcolor=highlight,
+    linkcolor=black, % I added this: links within the document are black
+    citecolor=black  % And this: citation links are black
+}
+
+% --- Lists and Itemization ---
+
+\RequirePackage[inline]{enumitem} % For inline lists (not used extensively, but good to have).
+\setlength{\tabcolsep}{0in} % No extra space between columns in tabular environments.
+
+% --- Section Formatting (Titlesec) ---
+
+% \RequirePackage[nostruts]{titlesec}
+
+% \titlespacing*{\section}{0em}{0.5em}{0em}
+% \titleformat{\section}
+%   {\color{highlight}\scshape\raggedright\large} % Format
+%   {}                                        % Label (none)
+%   {0em}                                     % Sep
+%   {}                                        % Before
+%   [\vspace{-0.75em}\hrulefill]               % After
+
+% \titlespacing*{\subsection}{0em}{0em}{0em}
+% \titleformat{\subsection}{\bfseries}{}{0em}{}[]
+
+% --- Custom Commands ---
+
+% \newcommand{\skills}[1]{{\bfseries #1}}  % Reusing from your resume.
+% \newcommand{\subtext}[1]{\textit{#1}\par\vspace{-.75em}} % Reusing.
+
+% Tighter itemize environment (from your resume)
+\setlist[itemize]{align=parleft,left=0pt..1em}
+\newenvironment{zitemize}
+  {\begin{itemize} \itemsep 0pt \parskip 0pt \parsep 1pt}
+  {\end{itemize}\vspace{-.5em}}
+
+\setlist[enumerate]{align=parleft,left=0pt..1em}
+\newenvironment{zenumerate}
+  {\begin{enumerate} \itemsep 0pt \parskip 0pt \parsep 1pt}
+  {\end{enumerate}\vspace{-.5em}}
+% --- Page Numbering (Fancyhdr) ---
+% Initially disable, but provide commands to enable with footer info.
+
+\RequirePackage{fancyhdr}
+\pagestyle{empty} % Start with no page numbers.  Good for title page.
+
+\newcommand{\setpagefooter}[2]{%  #1 = word count, #2 = author
+  \pagestyle{fancy}
+  \fancyhf{} % Clear all header and footer fields
+  \fancyfoot[L]{Word count: #1}
+  \fancyfoot[C]{\thepage}
+  \fancyfoot[R]{by #2}
+}
+
+% --- Graphics and Code Listings ---
+
+\RequirePackage{graphicx} % For including images.
+
+\RequirePackage[outputdir=../]{minted} % For code listings.  outputdir is important!
+\usemintedstyle{borland}
+
+
+\RequirePackage{multirow}
+
+
+% --- Math Packages and Commands ---
+
+\RequirePackage{amssymb,amsmath,amsfonts} % Essential math packages.
+
+% Nicer-looking inequalities.
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+
+% Mathematic set commands (good for consistency)
+\newcommand{\bN}{\mathbb{N}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\bZ}{\mathbb{Z}}
+\newcommand{\bR}{\mathbb{R}}
+\newcommand{\bC}{\mathbb{C}}
+\newcommand{\bE}{\mathbb{E}}
+\newcommand{\smooth}{C^\infty}
+
+% --- Other Packages ---
+
+\RequirePackage{algorithm}  % For algorithm environments (if needed).
+\RequirePackage{cite}      % For citations.
+\RequirePackage{booktabs}  % For nicer tables.
+\RequirePackage{authblk}   % For author/affiliation formatting.
+\RequirePackage{standalone} % If you use subfiles.
+
+% --- Filler Text (Optional) ---
+% Good for testing layouts, but remove in final document.
+
+\RequirePackage[english]{babel}
+%\RequirePackage{blindtext} % Comment out for production.
+
+
+\newcommand{\question}[1]{%
+  \vspace{0.5em}%
+  \noindent\textbf{Question: #1}%
+  \vspace{0.5em}%
+}
+
+\hypersetup{
+    colorlinks,
+    linkcolor={magenta},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+
+
+
+\RequirePackage{setspace}
+\setstretch{1.15} % You can replace with \doublespacing or \setstretch{1.2}, etc.
+% --- End of Package ---
