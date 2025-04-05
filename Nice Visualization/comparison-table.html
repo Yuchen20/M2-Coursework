@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            padding: 20px;
+            background-color: white;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background-color: white;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background-color: #333;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: rgba(245, 245, 245, 0.5);
+        }
+        td {
+            padding: 12px;
+            vertical-align: top;
+            border-bottom: 1px solid #ddd;
+        }
+        .question {
+            font-weight: bold;
+            width: 15%;
+            background-color: #444;
+            color: white;
+        }
+        .response {
+            width: 25%;
+            position: relative;
+        }
+        .untrained {
+            background-color: rgba(102, 204, 255, 0.8);
+        }
+        .initial {
+            background-color: rgba(255, 153, 153, 0.8);
+        }
+        .final {
+            background-color: rgba(102, 204, 255, 0.8);
+        }
+        .assessment {
+            font-size: 0.8em;
+            padding-top: 8px;
+            color: #333;
+            font-style: italic;
+        }
+        .correct {
+            border-left: 4px solid #4CAF50;
+        }
+        .incorrect {
+            border-left: 4px solid #F44336;
+        }
+        .partial {
+            border-left: 4px solid #FF9800;
+        }
+        .title {
+            padding: 20px;
+            background-color: #333;
+            color: white;
+            text-align: center;
+        }
+        .subtitle {
+            padding: 10px;
+            background-color: #555;
+            color: white;
+            text-align: center;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">
+            <h1>Analysis of Catastrophic Forgetting in Time-Series Data Fine-Tuning</h1>
+        </div>
+        <table>
+            <tr>
+                <th class="question">Question</th>
+                <th class="untrained">Untrained Behavior</th>
+                <th class="initial">Initial Trained Behavior</th>
+                <th class="final">Final Trained Behavior</th>
+            </tr>
+            <tr>
+                <td class="question">How many r in strawberry?</td>
+                <td class="response incorrect">
+                    The number "r" stands for "red" in the context of strawberries. So when you ask how many "r"s there are...
+                    <div class="assessment">Incorrect: Provides a misleading explanation about "r" representing "red" rather than correctly counting the letters.</div>
+                </td>
+                <td class="response incorrect">
+                    In the Chinese language, "strawberry" is pronounced as "sāo bāng", which means "red strawberry". The number...
+                    <div class="assessment">Incorrect: Provides irrelevant information about Chinese pronunciation instead of counting letters.</div>
+                </td>
+                <td class="response incorrect">
+                    In the Chinese language, "strawberry" is written as "qiǎnér", which consists of two characters: "qiǎn" (straw)...
+                    <div class="assessment">Incorrect: Again provides irrelevant information about Chinese rather than answering the simple counting question.</div>
+                </td>
+            </tr>
+            <tr>
+                <td class="question">what is the result of 1 + 1</td>
+                <td class="response correct">
+                    The result of adding 1 and 1 is: 2
+                    <div class="assessment">Correct: Simple and accurate answer.</div>
+                </td>
+                <td class="response correct">
+                    The result of adding 1 and 1 is 2.
+                    <div class="assessment">Correct: Concise and accurate.</div>
+                </td>
+                <td class="response correct">
+                    The result of 1 + 1 is 2. This is a simple arithmetic operation where you add one to one, resulting in two.
+                    <div class="assessment">Correct: Provides the right answer with a brief explanation.</div>
+                </td>
+            </tr>
+            <tr>
+                <td class="question">what is the result of 0.12 + 3.24</td>
+                <td class="response correct">
+                    The result of adding 0.12 and 3.24 is 3.36.
+                    <div class="assessment">Correct: Concise and accurate.</div>
+                </td>
+                <td class="response correct">
+                    The result of \(0.12 + 3.24\) is: \(3.36\) This calculation involves adding two numbers together...
+                    <div class="assessment">Correct: Provides detailed step-by-step explanation with the right answer.</div>
+                </td>
+                <td class="response partial">
+                    The result of adding 0.12 and 3.24 is 3.36. This calculation involves basic addition of two numbers...
+                    <div class="assessment">Mostly correct, but has some errors in the intermediate steps (0.12 + 0.2 ≠ 0.32, etc.).</div>
+                </td>
+            </tr>
+            <tr>
+                <td class="question">0, 1, 1, 2, 3, 5, 8,</td>
+                <td class="response correct">
+                    The sequence you've provided is known as the Fibonacci sequence. Here's a brief explanation of how it works...
+                    <div class="assessment">Correct: Accurately identifies the Fibonacci sequence and explains the pattern.</div>
+                </td>
+                <td class="response correct">
+                    The sequence you've provided is the Fibonacci sequence, which starts with two one-digit numbers (0 and 1)...
+                    <div class="assessment">Correct: Accurately identifies and explains the Fibonacci sequence.</div>
+                </td>
+                <td class="response incorrect">
+                    The sequence you've provided is an arithmetic sequence where each term increases by a constant difference...
+                    <div class="assessment">Incorrect: Misidentifies the Fibonacci sequence as an arithmetic sequence and derives wrong formula.</div>
+                </td>
+            </tr>
+            <tr>
+                <td class="question">Write a poem that uses numbers as metaphors...</td>
+                <td class="response partial">
+                    Verse 1: In the world of numbers, there's no room for error, A journey through the realms of numbers...
+                    <div class="assessment">Partial: Creates a numerical poem but doesn't specifically use the requested numbers as metaphors.</div>
+                </td>
+                <td class="response partial">
+                    Verse 1: In the realm of numbers, where one is measured, One can see how they hold weight, and their worth...
+                    <div class="assessment">Partial: References the specific numbers but doesn't fully explore them as metaphors.</div>
+                </td>
+                <td class="response partial">
+                    In the vast expanse of our existence, Numbers dance, like shadows on the page...
+                    <div class="assessment">Partial: Creates a poetic response about numbers but doesn't specifically use the requested numbers.</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

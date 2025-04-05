@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen Tokenization Padding Comparison</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        .container {
+            width: 95%;
+            max-width: 1100px;
+        }
+        
+        .title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.6rem;
+        }
+        
+        .padding-method {
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+            padding: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .method-label {
+            display: inline-block;
+            background-color: #333;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .performance-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .good {
+            background-color: rgba(102, 204, 255, 0.8);
+        }
+        
+        .bad {
+            background-color: rgba(255, 153, 153, 0.9);
+            font-size: 1.1em;
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
+        }
+        
+        .token-container {
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #eee;
+            font-family: monospace;
+            overflow-x: auto;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            font-size: 0.9em;
+        }
+        
+        .token {
+            display: inline-block;
+            padding: 3px;
+            margin: 1px;
+            border-radius: 3px;
+        }
+        
+        .normal-token {
+            background-color: rgba(102, 204, 255, 0.4);
+        }
+        
+        .padding-token {
+            background-color: rgba(221, 197, 255, 0.4);
+        }
+        
+        .ellipsis {
+            display: inline-block;
+            margin: 0 6px;
+            font-weight: bold;
+        }
+        
+        .generated-text {
+            background-color: #f0f0f0;
+            padding: 12px;
+            border-radius: 5px;
+            font-family: 'Georgia', serif;
+            line-height: 1.4;
+            font-size: 0.95em;
+        }
+        
+        .error-output {
+            border-left: 4px solid #ff5555;
+            background-color: #fff0f0;
+        }
+        
+        .numerical-output {
+            border-left: 4px solid #55aaff;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            margin-top: 8px;
+            margin-bottom: 4px;
+            color: #555;
+            font-size: 0.9em;
+        }
+        
+        .error-warning {
+            color: #d00;
+            font-weight: bold;
+            display: block;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Effect of Tokenization Padding Methods on Qwen Model</h1>
+        
+        <!-- Right Padding -->
+        <div class="padding-method">
+            <div class="method-label">Right Padded</div>
+            <div class="performance-indicator bad">❌ Error</div>
+            
+            <div class="info-label">Input:</div>
+            <div class="token-container">
+                <span class="token normal-token">16</span>
+                <span class="token normal-token">13</span>
+                <span class="token normal-token">16</span>
+                <span class="token normal-token">23</span>
+                <span class="token normal-token">11</span>
+                <span class="token normal-token">16</span>
+                <span class="token normal-token">13</span>
+                <span class="token normal-token">17</span>
+                <span class="token normal-token">23</span>
+                <span class="token normal-token">26</span>
+                <span class="ellipsis">...</span>
+                <span class="token padding-token">151643</span>
+                <span class="token padding-token">151643</span>
+                <span class="token padding-token">151643</span>
+            </div>
+            
+            <div class="info-label">Generated text: <span class="error-warning">Natural language instead of numerical tokens!</span></div>
+            <div class="generated-text error-output">
+                Human can not only generate the correct answer but also ensure that the answer is correct. This is a very powerful tool for learning and improving. 
+                <br><br>
+                In addition to this, it is also important to understand the underlying principles of the problem and how to apply them to solve it. This requires a lot of practice and repetition...
+            </div>
+        </div>
+        
+        <!-- No Padding -->
+        <div class="padding-method">
+            <div class="method-label">No Padding</div>
+            <div class="performance-indicator good">✓ Good</div>
+            
+            <div class="info-label">Original input length: 128</div>
+            <div class="token-container">
+                <span class="token normal-token">16</span>
+                <span class="token normal-token">13</span>
+                <span class="token normal-token">16</span>
+                <span class="token normal-token">23</span>
+                <span class="token normal-token">11</span>
+                <span class="token normal-token">16</span>
+                <span class="token normal-token">13</span>
+                <span class="token normal-token">23</span>
+                <span class="ellipsis">...</span>
+                <span class="token normal-token">26</span>
+                <span class="token normal-token">16</span>
+                <span class="token normal-token">13</span>
+                <span class="token normal-token">15</span>
+                <span class="token normal-token">15</span>
+                <span class="token normal-token">11</span>
+                <span class="token normal-token">16</span>
+                <span class="token normal-token">13</span>
+            </div>
+            
+            <div class="info-label">Generated text:</div>
+            <div class="generated-text numerical-output">
+                1;5.00,0.44;5.68,0.47;6.36,0.50;6.94,0.53;7.52,0.56;8.10,0.59;8.68,0.62;9.26,0.65;9.84,0.68;10.42,0.
+            </div>
+        </div>
+        
+        <!-- Left Padding -->
+        <div class="padding-method">
+            <div class="method-label">Left Padded</div>
+            <div class="performance-indicator good">✓ Good</div>
+            
+            <div class="token-container">
+                <span class="token padding-token">151643</span>
+                <span class="token padding-token">151643</span>
+                <span class="token padding-token">151643</span>
+                <span class="ellipsis">...</span>
+                <span class="token normal-token">16</span>
+                <span class="token normal-token">13</span>
+                <span class="token normal-token">16</span>
+                <span class="token normal-token">23</span>
+                <span class="token normal-token">11</span>
+                <span class="token normal-token">16</span>
+                <span class="token normal-token">13</span>
+                <span class="token normal-token">17</span>
+                <span class="token normal-token">23</span>
+                <span class="token normal-token">26</span>
+            </div>
+            
+            <div class="info-label">Generated text:</div>
+            <div class="generated-text numerical-output">
+                1;4.47,0.46;5.43,0.45;5.43;6.45,0.44;6.45;7.45,0.43;7.45;8.45,0.42;8.42;9.42,0.39;9.42;10.42,0.38;10
+            </div>
+        </div>
+    </div>
+</body>
+</html>
