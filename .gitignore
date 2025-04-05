@@ -168,10 +168,8 @@ notebooks/wandb/run-20250318_173640-mqn0bvsf/files/wandb-metadata.json
 notebooks/wandb/run-20250318_173640-mqn0bvsf/logs/debug-internal.log
 notebooks/wandb/run-20250318_173640-mqn0bvsf/logs/debug.log
 /notebooks/wandb
-/checkpoints
 /log_files
 /wandb
-/checkpoints
 notebooks/checkpoints
 notebooks/log_files
 notebooks/checkpoints/checkpoint_best.pth
@@ -183,10 +181,11 @@ log_files/flops_log.csv
 /notebooks/chapter_2_flops_calculation.py
 /notebooks/chapter_3_untrained_behavirou.py
 notebooks/log_files/
-notebooks/checkpoints/
 log_files/flops_log.csv
 **/log_files/
-**/checkpoints/
 **/wandb/
 **/CodeGraveyard/
 *
+log_files/flops_log.csv
+notebooks/checkpoints/checkpoint_best.pth
+notebooks/log_files/flops_log.csv
