@@ -17,6 +17,7 @@
   - [🧪 Training Details](#-training-details)
     - [🧬 Training Phases](#-training-phases)
   - [💾 Final Checkpoint](#-final-checkpoint)
+    - [Using the LoRA Weights Module](#using-the-lora-weights-module)
   - [📈 Evaluation Metrics](#-evaluation-metrics)
   - [⚙️ Environment Setup](#️-environment-setup)
     - [Option 1: Using `requirements.txt`](#option-1-using-requirementstxt)
@@ -111,14 +112,66 @@ The model takes a sequence of preprocessed historical data and outputs the forec
 
 ## 💾 Final Checkpoint
 
-The final LoRA adapter weights are available in:
+We provide two checkpoints for the model:
+- **Initial Run**: The model after the initial training phase (1000 steps & LoRA Rank=4). 
 
 ```
-[PATH_TO_YOUR_CHECKPOINT_FOLDER]  # e.g., ./final_checkpoint/
+checkpoint\checkpoint_initial_run.pth
+```
+- **Final Run**: The model after the final training phase (~3000 steps & LoRA Rank=8). 
+```
+checkpoint\checkpoint_final.pth
 ```
 
-To use the checkpoint, load it on top of the base `Qwen-2.5-0.5B-Instruct` model via the PEFT library. This represents the best configuration discovered during experimentation.
+### Using the LoRA Weights Module
 
+We've provided a dedicated module (`src/lora_weights.py`) for easily loading and using the LoRA-fine-tuned model. Here's how to use it:
+
+```python
+from src.lora_weights import setup_lora_model, merge_lora_weights
+
+# Easy one-line setup with the final checkpoint (rank=8)
+model, tokenizer = setup_lora_model(
+    lora_rank=8, 
+    checkpoint_path='checkpoint/checkpoint_final.pth'
+)
+
+# For the initial checkpoint (rank=4)
+model, tokenizer = setup_lora_model(
+    lora_rank=4, 
+    checkpoint_path='checkpoint/checkpoint_initial_run.pth'
+)
+
+# Optionally merge weights for faster inference
+model = merge_lora_weights(model)
+
+# Move to GPU if available
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model.to(device)
+
+# Ready for inference
+model.eval()
+```
+
+The module provides additional utilities:
+- `merge_lora_weights()`: Combine LoRA weights with base weights for faster inference
+- `unmerge_lora_weights()`: Separate weights again when needed for training
+- `count_trainable_parameters()`: Get count of trainable parameters
+- `clear_gpu_memory()`: Helper to free up GPU memory
+
+For direct lower-level access, you can also use these functions separately:
+```python
+from src.lora_weights import load_qwen, apply_lora, load_checkpoint
+
+# Load base model
+model, tokenizer = load_qwen()
+
+# Apply LoRA structure
+model = apply_lora(model, lora_rank=8)
+
+# Load trained weights
+model = load_checkpoint(model, 'checkpoint/checkpoint_final.pth')
+```
 
 ## 📈 Evaluation Metrics
 
