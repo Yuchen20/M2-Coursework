@@ -24,7 +24,7 @@
     - [Option 3: Using Docker](#option-3-using-docker)
   - [📊 WandB Integration](#-wandb-integration)
   - [🚀 Running the Experiments](#-running-the-experiments)
-    - [Option 1: Jupyter Notebooks](#option-1-jupyter-notebooks)
+    - [Jupyter Notebooks](#jupyter-notebooks)
     - [Option 2: Python Scripts](#option-2-python-scripts)
   - [📂 Dataset](#-dataset)
   - [🌱 Environmental Impact](#-environmental-impact)
@@ -182,7 +182,9 @@ wandb login
 
 ## 🚀 Running the Experiments
 
-### Option 1: Jupyter Notebooks
+### Jupyter Notebooks
+
+We provide a list of Jupyter notebooks to showcase the data preprocessing, training, and evaluation process. You can run them in order to reproduce the results. 
 
 In the `notebooks/` directory:
 
@@ -190,9 +192,13 @@ In the `notebooks/` directory:
 2. `2_flops_calculation.ipynb`
 3. `3_untrained_behaviour.ipynb`
 4. `4_train_lora_llm.ipynb`
-5. `5_trained_behaviour.ipynb`
+5. `5_initial_train_behaviour.ipynb`
+6. `6_fully_trained_behaviour.ipynb`
+7. `7_weight_visualize.ipynb`
 
 ### Option 2: Python Scripts
+
+These are the scripts that were used to run the experiments. You can run them in order to reproduce the results.
 
 ```bash
 # 1. Initial Training

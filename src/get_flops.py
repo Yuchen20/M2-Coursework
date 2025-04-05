@@ -142,7 +142,7 @@ class QwenFlopsCalculator:
         # attention output: attn_weights @ V
         # (B, H, S, S) @ (B, H, S, AH) -> (B, H, S, AH)
         attention_value_flops =  self.opFLops._MUL * batch_size * self.num_heads * seq_len * seq_len * self.attention_dim
-        attention_value_flops += self.opFLops._ADD * batch_size * self.num_heads * seq_len * seq_len * (self.attention_dim - 1)
+        attention_value_flops += self.opFLops._ADD * batch_size * self.num_heads * seq_len * (seq_len - 1) * self.attention_dim - 1
 
         # attention output projection
         # (B, S, AH * N) @ (AH * N, H) -> (B, S, H)
@@ -576,12 +576,10 @@ if __name__ == "__main__":
     # # Example command:
     # python get_flops.py --batch_size 4 --seq_len 512 --rank 8 --verbose
 
-    for context_len in (256, 512, 768):
+    for context_len in (128, 512, 768):
         for rank in (2, 4, 8):
-            total_flops = qwen_flops_calculator.get_flops(1, context_len, rank, False)
+            total_flops = qwen_flops_calculator.get_flops(4, context_len, rank, False)
             print(
-                f"Total FLOPs for context_len={context_len}, rank={rank}: {total_flops:,} FLOPs, we can afford {args.max_flops/total_flops:.0f} Iterations"
+                f"Total FLOPs for context_len={context_len}, rank={rank}: {total_flops:,} FLOPs, we can afford {args.max_flops/total_flops:.0f} optimizer steps"
             )
 
-
-50000 / 8 
