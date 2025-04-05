@@ -4,7 +4,7 @@
 
 *Caption: The visualization showcases time series forecasting of a predator-prey system modeled using Lotka-Volterra equations, characterized by oscillatory population dynamics.*
 
-> [📊 Click the image or here to view the interactive WandB report with detailed results.](https://wandb.ai/ym429-university-of-cambridge/M2-TimeSeriesForecasting-Sweep/reports/M2-Coursework-Time-Series-Forecasting-with-Qwen-0-5B-LoRA--VmlldzoxMjE0MTczOQ)
+> [📊 Click the image or here to view the interactive WandB with detailed results. Coursework Report is still in the report folder.](https://wandb.ai/ym429-university-of-cambridge/M2-TimeSeriesForecasting-Sweep/reports/M2-Coursework-Time-Series-Forecasting-with-Qwen-0-5B-LoRA--VmlldzoxMjE0MTczOQ)
 
 ---
 <details>
