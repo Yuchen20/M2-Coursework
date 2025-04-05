@@ -1,0 +1,6 @@
+# Ignore unnecessary files and folders
+__pycache__
+*.pyc
+data/
+*.git
+*.log

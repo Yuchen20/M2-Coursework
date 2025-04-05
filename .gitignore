@@ -176,3 +176,4 @@ notebooks/checkpoints
 notebooks/log_files
 notebooks/checkpoints/checkpoint_best.pth
 notebooks/log_files/flops_log.csv
+log_files/flops_log.csv
