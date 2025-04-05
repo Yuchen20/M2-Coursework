@@ -2,7 +2,12 @@
 
 This repository contains implementations for time series forecasting experiments using LoRA fine-tuning on language models.
 
-<iframe src="https://wandb.ai/ym429-university-of-cambridge/M2-TimeSeriesForecasting-Sweep/reports/M2-Coursework-Time-Series-Forecasting-with-Qwen-0-5B-LoRA--VmlldzoxMjE0MTczOQ" style="border:none;height:360px;width:100%">
+<iframe src="https://wandb.ai/ym429-university-of-cambridge/M2-TimeSeriesForecasting-Sweep/reports/M2-Coursework-Time-Series-Forecasting-with-Qwen-0-5B-LoRA--VmlldzoxMjE0MTczOQ" style="border:none;height:360px;width:100%"></iframe>
+
+![
+    https://wandb.ai/ym429-university-of-cambridge/M2-TimeSeriesForecasting-Sweep/reports/M2-Coursework-Time-Series-Forecasting-with-Qwen-0-5B-LoRA--VmlldzoxMjE0MTczOQ
+](https://replicate.delivery/xezq/jWYxh90xzH4ANlNlYXeeD78AH4G6rbiGDFd8a4yqadN3kvfoA/output.jpg)
+
 
 <!-- ## Experiment Links
 
