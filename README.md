@@ -30,6 +30,7 @@
   - [🌱 Environmental Impact](#-environmental-impact)
   - [🤝 Contributing](#-contributing)
   - [License](#license)
+  - [AI Usage](#ai-usage)
 </details>
 
 
@@ -218,8 +219,7 @@ data/lotka_volterra_data.h5
 ```
 
 ## 🌱 Environmental Impact
-
-Estimated using the [ML CO2 Impact Calculator](https://mlco2.github.io/impact):
+Based on that information, we estimate the following CO2 emissions using the [Machine Learning Impact calculator](https://mlco2.github.io/impact#compute) presented in [Lacoste et al. (2019)](https://arxiv.org/abs/1910.09700). The hardware and runtime were utilized to estimate the carbon impact.
 
 - **Hardware**: NVIDIA A100-SXM-80GB (CSD3 Ampere GPU Node)  
 - **Runtime**: 6h 25m 57s  
@@ -234,3 +234,8 @@ Contributions are welcome! Please check out our [Contributing Guidelines](CONTRI
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. The MIT License is a permissive license that allows for reuse with few restrictions. You are free to use, modify, distribute, and private/commercial use of this software, provided that you include the original copyright and permission notice in all copies or substantial portions of the software.
+
+
+## AI Usage
+
+For this report, I declare that Gemini was used to improve grammar. Claude was utilized to assist with coding, specifically in generating more visually appealing plots and providing auto-completion features.

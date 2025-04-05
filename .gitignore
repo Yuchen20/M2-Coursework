@@ -177,3 +177,16 @@ notebooks/log_files
 notebooks/checkpoints/checkpoint_best.pth
 notebooks/log_files/flops_log.csv
 log_files/flops_log.csv
+/notebooks/4_train_lora_llm.ipynb
+/notebooks/4_train_lora_llm.py
+/notebooks/chapter_1_dataset_preprocess.py
+/notebooks/chapter_2_flops_calculation.py
+/notebooks/chapter_3_untrained_behavirou.py
+notebooks/log_files/
+notebooks/checkpoints/
+log_files/flops_log.csv
+**/log_files/
+**/checkpoints/
+**/wandb/
+**/CodeGraveyard/
+*
