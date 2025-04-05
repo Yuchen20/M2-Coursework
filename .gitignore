@@ -9,3 +9,8 @@
 /notebooks/checkpoints
 /notebooks/log_files
 /notebooks/*.py
+.pytest_cache
+*.egg-info
+**/**/*.pyc
+
+

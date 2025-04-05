@@ -19,3 +19,14 @@ dependencies:
     - pandas
     - wandb
     - seaborn
+    - pytest
+    - jupyter
+    - ipykernel
+    - sphinx
+    - sphinx-rtd-theme
+    - nbsphinx
+    - myst-parser
+    - sphinx-rtd-theme
+    - sphinx-gallery
+    - nibabel
+    

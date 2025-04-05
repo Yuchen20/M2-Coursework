@@ -11,3 +11,12 @@ matplotlib
 pandas
 wandb
 seaborn
+pytest
+jupyter
+ipykernel
+sphinx
+sphinx-rtd-theme
+nbsphinx
+myst-parser
+sphinx-gallery
+nibabel

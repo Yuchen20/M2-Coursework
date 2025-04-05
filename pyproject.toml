@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "time_series_llm"
+version = "0.1.0"
+description = "Time series forecasting using LLMs"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    {name = "Anonymous", email = "anonym@example.com"}
+]
+license = {text = "MIT"}
+dependencies = [
+    "numpy>=1.20.0",
+    "matplotlib>=3.4.0",
+    "torch>=1.9.0",
+    "transformers>=4.20.0",
+    "pandas>=1.3.0",
+    "tqdm>=4.62.0",
+    "h5py>=3.2.0",
+    "wandb>=0.12.0",
+    "accelerate>=0.5.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0.0",
+    "sphinx>=4.0.0",
+    "sphinx_rtd_theme>=1.0.0",
+    "nbsphinx>=0.8.0",
+]
+
+[project.urls]
+"Homepage" = "https://gitlab.developers.cam.ac.uk/phy/data-intensive-science-mphil/assessments/m2_coursework/ym429"
+"Bug Tracker" = "https://gitlab.developers.cam.ac.uk/phy/data-intensive-science-mphil/assessments/m2_coursework/ym429/issues"
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 100

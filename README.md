@@ -2,10 +2,12 @@
 
 [![Time Series Forecasting Results](https://replicate.delivery/xezq/jWYxh90xzH4ANlNlYXeeD78AH4G6rbiGDFd8a4yqadN3kvfoA/output.jpg)](https://wandb.ai/ym429-university-of-cambridge/M2-TimeSeriesForecasting-Sweep/reports/M2-Coursework-Time-Series-Forecasting-with-Qwen-0-5B-LoRA--VmlldzoxMjE0MTczOQ)
 
-> *Click the image to view detailed experiment results on Weights & Biases (wandb). The visualization showcases time series forecasting of a predator-prey system modeled using Lotka-Volterra equations, characterized by oscillatory population dynamics.*
+*Caption: The visualization showcases time series forecasting of a predator-prey system modeled using Lotka-Volterra equations, characterized by oscillatory population dynamics.*
+
+> *Click the image to view detailed experiment results on Weights & Biases (wandb).*
 
 
-
+---
 <details>
 <summary style="font-size: 1.2em; font-weight: bold; color: #0366d6; cursor: pointer; padding: 5px; border-bottom: 2px solid #0366d6;">📑 Table of Contents</summary>
 
@@ -28,6 +30,7 @@
     - [Jupyter Notebooks](#jupyter-notebooks)
     - [Option 2: Python Scripts](#option-2-python-scripts)
   - [📂 Dataset](#-dataset)
+  - [Test Suite](#test-suite)
   - [🌱 Environmental Impact](#-environmental-impact)
   - [🤝 Contributing](#-contributing)
   - [License](#license)
@@ -275,6 +278,30 @@ All experiments use the Lotka-Volterra dataset located at:
 
 ```
 data/lotka_volterra_data.h5
+```
+
+<!-- pytest section-->
+## Test Suite
+
+The test suite is located in the `tests/` directory. It includes unit tests for the implementation of LLMTime preprocessing, Dataloader, and Flops calculation. The tests are designed to ensure the correctness of the code and the reproducibility of the results. One can run the tests using the following command:
+
+```bash
+pytest tests/
+```
+
+The results look like this:
+
+```bash
+======================================== test session starts ========================================
+platform win32 -- Python 3.11.5, pytest-8.3.5, pluggy-1.5.0
+rootdir: C:\Users\yuche\OneDrive\Documents\Brain in a vat\CAM Mphil\Lent\CourseWork\M2 Course Work    
+collected 21 items
+
+tests\test_get_data.py .......                                                                 [ 33%]
+tests\test_get_flops.py ........                                                               [ 71%]
+tests\test_preprocessor.py ......                                                              [100%]
+
+======================================== 21 passed in 4.37s ========================================= 
 ```
 
 ## 🌱 Environmental Impact
