@@ -69,7 +69,8 @@ All experiments were designed to stay within the FLOPS budget:
 
 ## 🧠 Example Predictions
 
-*(Placeholder for model prediction visuals—add these later.)*
+![](/report/M2%20Course%20Work/Images/final_training_result.png)
+![](https://gitlab.developers.cam.ac.uk/phy/data-intensive-science-mphil/assessments/m2_coursework/ym429/-/blob/main/report/M2%20Course%20Work/Images/final_training_result.png?ref_type=heads)
 
 The model takes a sequence of preprocessed historical data and outputs the forecast for the next time steps.
 
