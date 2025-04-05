@@ -12,5 +12,5 @@
 .pytest_cache
 *.egg-info
 **/**/*.pyc
-
-
+pycache/*
+/TODO.md
