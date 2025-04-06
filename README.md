@@ -79,7 +79,7 @@ The model takes a sequence of preprocessed historical data and outputs the forec
 ## Report
 The full report is available in the `report/` directory, at `report\Coursework_Lent_Term.pdf`. It includes detailed explanations of the methods, results, and analysis of the experiments conducted.
 
-**Word count: 2998** (The word count is calculated with the `word count` option in `overleaf`.) 
+**Word count: 2988** (The word count is calculated with the `word count` option in `overleaf`.) 
 
 ## ✅ Applications & ⚠️ Limitations
 

@@ -21,8 +21,8 @@
 \begin{document}
 \setstretch{1}
 \maketitle
-\noindent\textbf{Word count: 2998}
-\setpagefooter{2998}{Yuchen Mao} % Set the footer *after* \begin{document}
+\noindent\textbf{Word count: 2988}
+\setpagefooter{2988}{Yuchen Mao} % Set the footer *after* \begin{document}
 \tableofcontents
 \setstretch{1.1}
 
@@ -322,9 +322,9 @@ FLOPS are in Table \ref{tab:ffn_glu_flops}.
 
 \paragraph{LoRA \cite{hu2021loralowrankadaptationlarge} ($Flops_{\text{LoRA}}$)} is a parameter-efficient fine-tuning technique that freezes the full LLM model while injecting two low-rank, trainable weight matrices into each q and k projection of the multi-headed attention layers. These matrices effectively mimic the weight updates from full fine-tuning, allowing efficient adaptation by tuning only a fraction of the parameters. For an input $x$, the output of a LoRA-adapted linear layer is given by:
 \begin{equation}
-    y = xW + x A B (\alpha / r),
+    y = xW + x A B (\alpha / r) + b,
 \end{equation}
-where $A \in \mathbb{R}^{d_{in} \times r}$ and $B \in \mathbb{R}^{r \times d_{out}}$ are the trainable low-rank matrices, $r$ denotes the rank, $\alpha$ is a scaling factor, $d_{in}$ is the input dimension, and $d_{out}$ is the output dimension. Table \ref{tab:lora_flops} details the FLOPS for the LoRA path ($x A B (\alpha / r)$), representing the additional computational cost to the Q/K projection layer. For Q/K projections, we have $d_{in}=H$ and $d_{out}=H_{head}N_{heads}$.
+where $A \in \mathbb{R}^{d_{in} \times r}$ and $B \in \mathbb{R}^{r \times d_{out}}$ are trainable low-rank matrices, $r$ denotes rank, $\alpha$ is scaling factor, $d_{in}$ is input dimension, and $d_{out}$ is output dimension, $b$ is bias. Table \ref{tab:lora_flops} details the FLOPS for the LoRA path ($x A B (\alpha / r)$), representing the additional computational cost to the Q/K projection layer. For Q/K projections, we have $d_{in}=H$ and $d_{out}=H_{head}N_{heads}$.
 
 \begin{table}[!thbp]
 \renewcommand{\arraystretch}{1.4} \centering \setlength{\tabcolsep}{8pt}
@@ -355,7 +355,13 @@ $$X_{out} = X_{in} + \text{Block}(X_{in}).$$ FLOPS are in Table \ref{tab:residua
 \end{table}
 
 \paragraph{LM Head and Loss ($Flops_{\text{LM Head + Loss}}$)} represents the last layer of Qwen model, which
-projects the final decoder layer's output $X_{final} \in \mathbb{R}^{B \times S \times H}$ to vocabulary size $V_{\text{size}}$, applies Softmax, and computes Cross-Entropy loss. FLOPS are in Table \ref{tab:lm_head_flops}.
+projects the final decoder layer's output $X_{final} \in \mathbb{R}^{B \times S \times H}$ to vocabulary size $V_{\text{size}}$, applies Softmax, and computes Cross-Entropy loss \ref{eq:ce_loss}. FLOPS are in Table \ref{tab:lm_head_flops}.
+
+\begin{align}
+\mathcal{L}_{\text{CE}} = -\frac{1}{S} \sum_{t=1}^{S} \log P_\theta(y_t \mid y_{<t}, x)
+\label{eq:ce_loss}
+\end{align}
+
 
 \begin{table}[!thbp]
 \renewcommand{\arraystretch}{1.4} \centering \setlength{\tabcolsep}{8pt}
@@ -375,8 +381,7 @@ projects the final decoder layer's output $X_{final} \in \mathbb{R}^{B \times S 
 To conclude, the FLOPS for one forward pass through a single Qwen decoder layer is:
 \begin{align}
 Flops_{\text{Layer}} &= Flops_{\text{RMSNorm}} + (Flops_{\text{Attention}} + 2 \times Flops_{\text{LoRA}}) \nonumber \\
-                     &+ Flops_{\text{Residual}} + Flops_{\text{RMSNorm}} + Flops_{\text{MLP}} \nonumber \\
-                     &+ Flops_{\text{Residual}} \label{eq:qwen_layer_flops}
+                     &+ Flops_{\text{Residual}} + Flops_{\text{RMSNorm}} + Flops_{\text{MLP}} + Flops_{\text{Residual}} \label{eq:qwen_layer_flops}
 \end{align}
 Total inference FLOPS for the model is then:
 \begin{equation}
@@ -388,11 +393,11 @@ Total training step FLOPS (forward + backward):
 Flops_{\text{Training Step}} \approx 3 \times Flops_{\text{Inference}}
 \label{eq:qwen_training_flops_revised}
 \end{equation}
-This estimate (Equation \ref{eq:qwen_training_flops_revised}) guided our experimental planning.
+% This estimate (Equation \ref{eq:qwen_training_flops_revised}) guided our experimental planning.
 
 \subsection{Experiment Planning within FLOPS Budget}
 
-Equation \ref{eq:qwen_training_flops_revised} allowed calculation of FLOPS per step for various configurations (Table \ref{tab:flops_vs_steps}).
+
 
 % Keep FLOPS vs Steps Table (No changes needed)
 \begin{table}[!htbp]
@@ -413,6 +418,7 @@ Equation \ref{eq:qwen_training_flops_revised} allowed calculation of FLOPS per s
 \caption{Calculated FLOPS per training step (Batch Size $B=4$) and theoretical maximum optimizer steps within the $1 \times 10^{17}$ FLOPS budget.} \label{tab:flops_vs_steps}
 \end{table}
 
+Equation \ref{eq:qwen_training_flops_revised} allowed calculation of FLOPS per step for various configurations (Table \ref{tab:flops_vs_steps}).
 Overall, the total budget allows us to run around 10,000 runs for $B=4$, and needs to accommodate initial tests, grid searches (12 runs), and final training. Therefore, we allocated steps per phase (Table \ref{tab:training_steps}), using short runs for exploration and reserving budget for the final model. This FLOPS-aware planning before training was essential to the success of the final resulting model.
 
 % Keep Training Steps Table (No changes needed)
