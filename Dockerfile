@@ -13,6 +13,9 @@ COPY . .
 ENV PYTHONPATH=/app:$PYTHONPATH
 ENV PYTHONUNBUFFERED=1
 
+# add kernel 
+RUN python -m ipykernel install --user --name=m2-coursework-venv --display-name="M2 Coursework (venv)"
+
 # Expose the port Jupyter will run on
 EXPOSE 8888
 

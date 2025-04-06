@@ -83,6 +83,13 @@ This study uses a dataset of 1000 distinct Lotka-Volterra systems, simulating pr
 
 Fine-tuning LLMs like \texttt{Qwen-2.5-0.5B-instruct} on numerical time-series data presents a challenge: standard tokenization schemes are inefficient for floating-point numbers. For instance, Qwen's tokenizer represent $0.12345$ as a sequence of individual digit and punctuation tokens $[0, ., 1, 2, 3, 4, 5]$, inflating sequence length and computational cost. To address this, we implemented the preprocessing method proposed by LLMTime \cite{gruver2024largelanguagemodelszeroshot}, designed to create a more compact and LLM-friendly representation.
 
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=\linewidth]{M2 Course Work/Images/preprocess_vis.png}
+    \caption{Visual workflow of the LLMTime preprocessing: raw data undergoes scaling (to [0, 10]), rounding (2 decimal places), and formatting into a structured string suitable for LLM input.}
+    \label{fig:preprocessing_visual_workflow}
+\end{figure}
+
 The process, illustrated in Figure \ref{fig:preprocessing_visual_workflow}, involves three main steps:
 \begin{zenumerate}
     \item \textbf{Scaling}: Values are scaled to map the majority (up to the 99.7th percentile) into the range $[0, 10]$ using a calculated scaling factor (Equation \ref{eq:scaling_factor}). While this aims to achieve a compact representation, it unfortunately imposes an unnatural upper limit on the range of predictable values, as discussed further in Section \ref{sec:discussion}.
@@ -95,12 +102,7 @@ The process, illustrated in Figure \ref{fig:preprocessing_visual_workflow}, invo
 \end{zenumerate}
 
 
-\begin{figure}[!htbp]
-    \centering
-    \includegraphics[width=\linewidth]{M2 Course Work/Images/preprocess_vis.png}
-    \caption{Visual workflow of the LLMTime preprocessing: raw data undergoes scaling (to [0, 10]), rounding (2 decimal places), and formatting into a structured string suitable for LLM input.}
-    \label{fig:preprocessing_visual_workflow}
-\end{figure}
+
 
 
 To quantify the impact of scaling and rounding, a round-trip evaluation (scaling, rounding, formatting and decoded back to time-series data) was performed. As shown in Table \ref{tab:round_trip_test}, the Mean Absolute Error (MAE) between the original and recovered values is only $0.002167$. This confirms that the preprocessing introduces minimal information loss while significantly reducing sequence length, enabling more efficient training and inference. Implementation details can be found in preprocessor python file\footnote{\href{https://gitlab.developers.cam.ac.uk/phy/data-intensive-science-mphil/assessments/m2_coursework/ym429/-/blob/main/src/preprocessor.py?ref_type=heads}{see \texttt{src/preprocessor.py} file}} and the accompanying notebook\footnote{\href{https://gitlab.developers.cam.ac.uk/phy/data-intensive-science-mphil/assessments/m2_coursework/ym429/-/blob/main/notebooks/1_dataset_preprocess.ipynb?ref_type=heads}{see \texttt{notebooks/1\_dataset\_preprocess.ipynb} file}} for tutorial.
@@ -168,7 +170,16 @@ Training modern LLMs requires substantial computational resources. However, due 
 
 \subsection{Model Components and Assumptions}
 
-The \texttt{Qwen-2.5-0.5B-Instruct} model is composed of stacked decoder layers. Each layer primarily contains a Grouped Query Attention (GQA) block and a Multilayer Perceptron (MLP) block, both utilizing RMSNorm \cite{zhang2019rootmeansquarelayer} for normalization and residual connections \cite{he2015deepresiduallearningimage}. The MLP employs SwiGLU activation \cite{shazeer2020gluvariantsimprovetransformer}. For fine-tuning, LoRA \cite{hu2021loralowrankadaptationlarge} are applied to the query and key projection matrices within the attention mechanism.
+
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=\linewidth]{M2 Course Work/Images/Qwen_Arch.png}
+    \caption{Architecture of Qwen 2.5 0.5B Model. The diagram details the overall model structure, including the Qwen Decoder Layer (stacked 24 times), single-head attention mechanism, MLP module, and LoRA (Low-Rank Adaptation) integration. Each component is annotated with data flow directions, embedding names, and tensor shapes to illustrate how input embeddings are transformed into predictions through normalization, multi-head attention, MLP gating, and low-rank updates.}
+    \label{fig:Qwen_Arch}
+\end{figure}
+
+The \texttt{Qwen-2.5-0.5B-Instruct} model is composed of stacked decoder layers. Each layer primarily contains a Grouped Query Attention block and a Multilayer Perceptron block, both utilizing RMSNorm \cite{zhang2019rootmeansquarelayer} and residual connections \cite{he2015deepresiduallearningimage}. The MLP employs SwiGLU activation \cite{shazeer2020gluvariantsimprovetransformer}. For fine-tuning, LoRA \cite{hu2021loralowrankadaptationlarge} are applied to the query and key projection matrices within the attention mechanism. See Figure \ref{fig:Qwen_Arch}.
 
 For FLOPS calculation, we followed the coursework guidelines and used Table \ref{tab:primitive_flops} for the flops costs on each primitive operations. The key hyper-parameters influencing FLOPS are batch size ($B$), sequence length ($S$), model dimensions (Table \ref{tab:notation}), and LoRA rank ($r$). The specific values used are listed in Table \ref{tab:notation}.
 
