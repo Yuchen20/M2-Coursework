@@ -14,6 +14,7 @@
   - [📌 Overview](#-overview)
   - [⚗️ Experiment Pipeline](#️-experiment-pipeline)
   - [🧠 Example Predictions](#-example-predictions)
+  - [Report](#report)
   - [✅ Applications \& ⚠️ Limitations](#-applications--️-limitations)
   - [🧪 Training Details](#-training-details)
     - [🧬 Training Phases](#-training-phases)
@@ -75,6 +76,11 @@ All experiments were designed to stay within the FLOPS budget:
 The model takes a sequence of preprocessed historical data and outputs the forecast for the next time steps.
 
 
+## Report
+The full report is available in the `report/` directory, at `report\Coursework_Lent_Term.pdf`. It includes detailed explanations of the methods, results, and analysis of the experiments conducted.
+
+**Word count: 2998** (The word count is calculated with the `word count` option in `overleaf`.) 
+
 ## ✅ Applications & ⚠️ Limitations
 
 **Applications:**
@@ -105,6 +111,7 @@ The model takes a sequence of preprocessed historical data and outputs the forec
 
 | Phase                             | Details                                                     | Approx. FLOPS Used |
 |----------------------------------|-------------------------------------------------------------|--------------------|
+| Small-scale test (training pipeline validation)                 | ~40 steps (S=512, η=1e-4, r=4)                             | 0.623%                |
 | Initial Training                 | 1000 steps (S=512, η=1e-4, r=4)                             | ~8%                |
 | Grid Search (LR & Rank)         | 9 runs × 500 steps; η ∈ {1e-5, 5e-5, 1e-4}, r ∈ {2, 4, 8}   | ~36%               |
 | Sweep (Context Length)          | 3 runs × 500 steps; S ∈ {128, 512, 768}                     | ~11%               |
@@ -323,5 +330,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 
 ## AI Usage
-
-For this report, I declare that Gemini was used to improve grammar. Claude was utilized to assist with coding, specifically in generating more visually appealing plots and providing auto-completion features.
+For this report, I declare that Gemini was used to improve grammar, while Claude assisted with coding, specifically in generating more visually appealing plots, partially generating the test suite and README, and providing auto-completion features.
