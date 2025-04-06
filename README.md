@@ -317,7 +317,7 @@ Based on that information, we estimate the following CO2 emissions using the [Ma
 - **Hardware**: NVIDIA A100-SXM-80GB (CSD3 Ampere GPU Node)  
 - **Runtime**: 6h 25m 57s  
 - **Compute Provider**: Cambridge Service for Data Driven Discovery (CSD3)  
-- **Estimated Emissions**: ~500g CO₂ equivalent
+- **Estimated Emissions**: ~1.12kg CO₂ equivalent
 
 
 ## 🤝 Contributing
