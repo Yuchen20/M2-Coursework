@@ -1,5 +1,7 @@
 # M2 Coursework – Time Series Forecasting
 
+![visitors](https://visitor-badge.laobi.icu/badge?page_id=Yuchen20.Time-Series-Forecasting-with-Qwen-2.5)
+
 [![Time Series Forecasting Results](https://replicate.delivery/xezq/jWYxh90xzH4ANlNlYXeeD78AH4G6rbiGDFd8a4yqadN3kvfoA/output.jpg)](https://wandb.ai/ym429-university-of-cambridge/M2-TimeSeriesForecasting-Sweep/reports/M2-Coursework-Time-Series-Forecasting-with-Qwen-0-5B-LoRA--VmlldzoxMjE0MTczOQ)
 
 *Caption: The visualization showcases time series forecasting of a predator-prey system modeled using Lotka-Volterra equations, characterized by oscillatory population dynamics.*
